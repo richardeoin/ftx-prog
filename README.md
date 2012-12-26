@@ -30,7 +30,7 @@ This should give you full details on all the possible options.
 sudo ./ftx_prog --dump
 ```
 
-### Inverting RS232 Signals
+### Inverting RS232 Signals `FT230X and FT231X only`
 
 ```
 sudo ./ftx_prog --invert [rs232 pin]
@@ -69,7 +69,7 @@ The most commonly used are:
 
 *Note: The functionality of these options is completely untested*
 
-### SPI / FT1248 ###
+### SPI / FT1248 
 
 *Note: The functionality of these options is completely untested*
 
@@ -81,13 +81,17 @@ The most commonly used are:
 sudo ./ftx_prog --rs485-echo-supp [on|off]
 ```
 
-Used to enable echo supression in the interface is being used in a RS-485 system
+Used to enable echo supression if the interface is being used in a RS-485 system.
 
 ### Misc
 
 ## License
 
 GPL v2
+
+## Contributing
+
+Bug reports and pull requests welcome!
 
 ## Credits
 
