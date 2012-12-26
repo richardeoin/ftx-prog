@@ -33,20 +33,20 @@ sudo ./ftx_prog --dump
 ### Inverting RS232 Signals
 
 ```
-sudo ./ftx_prog --invert \[rs232 pin\]
+sudo ./ftx_prog --invert [rs232 pin]
 ```
 
 This will invert the polarity of this pin on the chip. So if it was Active High it'll become Active Low and visa versa. You can use `--dump` to see if the pin is in its default state or not.
 
 The possible pins are
-*txd
-*rxd
-*rts
-*cts
-*dtr
-*dsr
-*dcd
-*ri
+* txd
+* rxd
+* rts
+* cts
+* dtr
+* dsr
+* dcd
+* ri
 
 ### CBUS Pins
 
