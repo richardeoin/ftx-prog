@@ -249,7 +249,7 @@ static const char *bool_strings[] = {
 struct eeprom_fields {
 	/* Misc Config */
 	unsigned char bcd_enable;
-	unsigned char force_power_enable	;
+	unsigned char force_power_enable;
 	unsigned char deactivate_sleep;
 	unsigned char rs485_echo_suppress;
 	unsigned char ext_osc;
@@ -277,13 +277,13 @@ struct eeprom_fields {
 	unsigned char ft1248_bord;
 	unsigned char ft1248_flow_control;
 	unsigned char disable_i2c_schmitt;
-	unsigned char invert_txd	;
-	unsigned char invert_rxd	;
+	unsigned char invert_txd;
+	unsigned char invert_rxd;
 	unsigned char invert_rts;
-	unsigned char invert_cts	;
+	unsigned char invert_cts;
 	unsigned char invert_dtr;
-	unsigned char invert_dsr	;
-	unsigned char invert_dcd	;
+	unsigned char invert_dsr;
+	unsigned char invert_dcd;
 	unsigned char invert_ri;
 	
 	/* DBUS & CBUS Control */
@@ -354,8 +354,11 @@ static void dumpmem (const char *msg, void *addr, int len)
 		}
 	}
 }
-
-const char* print_bool(char value) {
+/**
+ * A helper that prints either true or false
+ */
+const char* print_bool(char value)
+{
 	if (value) return bool_strings[0];
 	return bool_strings[1];
 }
