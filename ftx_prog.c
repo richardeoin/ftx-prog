@@ -39,7 +39,7 @@ static int verbose = 0;
 static const char *save_path = NULL, *restore_path = NULL;
 
 enum cbus_mode {
-	cbus_tristate   =  0,
+	cbus_tristate	=  0,
 	cbus_rxled		=  1,
 	cbus_txled		=  2,
 	cbus_txrxled	=  3,
@@ -64,7 +64,7 @@ enum cbus_mode {
 };
 
 enum misc_config {
-	bcd_enable 			= 0x01,
+	bcd_enable			= 0x01,
 	force_power_enable	= 0x02,
 	deactivate_sleep	= 0x04,
 	rs485_echo_suppress	= 0x08,
@@ -78,10 +78,10 @@ enum power_config {
 	self_powered		= 0x20,
 };
 enum dbus_cbus_config {
-	dbus_drive_strength = 0x03,
+	dbus_drive_strength	= 0x03,
 	dbus_slow_slew		= 0x04,
 	dbus_schmitt		= 0x08,
-	cbus_drive_strength = 0x30,
+	cbus_drive_strength	= 0x30,
 	cbus_slow_slew		= 0x40,
 	cbus_schmitt		= 0x80,
 };
