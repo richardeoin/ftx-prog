@@ -39,14 +39,16 @@ sudo ./ftx_prog --invert [rs232 pin]
 This will invert the polarity of this pin on the chip. So if it was Active High it'll become Active Low and visa versa. You can use `--dump` to see if the pin is in its default state or not.
 
 The possible pins are:
-* `txd`
-* `rxd`
-* `rts`
-* `cts`
-* `dtr`
-* `dsr`
-* `dcd`
-* `ri`
+* `txd` *The interface's data output pin*
+* `rxd` *The interface's data input pin*
+* `rts` *Request to Send output pin*
+* `cts` *Clear to Send input pin*
+* `dtr` *Data Terminal Ready output pin*
+* `dsr` *Data Set Ready input pin*
+* `dcd` *Data Carrier Detect input pin*
+* `ri` *Ring Indicator Input*
+
+Taking `RI` low (or high when polarity is inverted) for > 20ms will resume the PC USB host controller from suspend if remote wakeup have been enabled using `--remote-wakeup on`.
 
 ### CBUS Pins
 
