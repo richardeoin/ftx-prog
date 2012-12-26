@@ -117,8 +117,12 @@ enum arg_type {
 	arg_old_serno,
 	arg_new_serno,
 	arg_max_bus_power,
-	arg_high_current_io,
 	arg_suspend_pull_down,
+	
+	arg_i2c_slave_address,
+	arg_i2c_device_id,
+	arg_rs485_echo_suppression,
+	
 	arg_old_vid,
 	arg_old_pid,
 	arg_new_vid,
@@ -140,8 +144,10 @@ static const char* arg_type_strings[] = {
 	"--old-serial-number",
 	"--new-serial-number",
 	"--max-bus-power",
-	"--high-current-io",
 	"--suspend-pull-down",
+	"--i2c-slave-address",
+	"--i2c-device-id",
+	"--rs485-echo-supp",
 	"--old-vid",
 	"--old-pid",
 	"--new-vid",
@@ -208,8 +214,10 @@ static const char *arg_type_help[] = {
 	"<string>  # (current serial number of device to be reprogrammed)",
 	"<string>  # (new USB serial number string)",
 	"    <number>  # (max bus current in milli-amperes)",
-	"  [on|off]  # (enable high [6mA @ 5V] drive current on CBUS pins)",
 	"[on|off]  # (force I/O pins into logic low state on suspend)",
+	"<number>  # (i2c slave address)",
+	"	 <number>  # (i2c device id)",
+	"	 [on|off]  # (enable echo supression on the RS485 bus)",
 	"		 <number>  # (current vendor id of device to be reprogrammed, eg. 0x0403)",
 	"		 <number>  # (current product id of device to be reprogrammed, eg. 0x6001)",
 	"		 <number>  # (new/custom vendor id to be programmed)",
@@ -804,10 +812,21 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 				show_help(stdout);
 				exit(1);
 			case arg_dump:
-				continue;
+				break;
 			case arg_verbose:
 				verbose = 1;
-				continue;
+				break;
+			/* File operations */
+			case arg_save:
+				save_path = argv[i++];
+				break;
+			case arg_restore:
+				restore_path = argv[i++];
+				break;
+			case arg_cbus:
+				c = match_arg(argv[i++], cbus_strings);
+				ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
+				break;
 			case arg_invert:
 				switch(match_arg(argv[i++], rs232_strings)) {
 					case 0:	ee->invert_txd = !ee->invert_txd; break;
@@ -819,19 +838,8 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 					case 6:	ee->invert_dcd = !ee->invert_dcd; break;
 					case 7:	ee->invert_ri = !ee->invert_ri; break;
 				}
-		}
-
-		switch (arg) {
-			case arg_save:
-				save_path = argv[i++];
 				break;
-			case arg_restore:
-				restore_path = argv[i++];
-				break;
-			case arg_cbus:
-				c = match_arg(argv[i++], cbus_strings);
-				ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
-				break;
+			/* Strings */
 			case arg_manufacturer:
 				ee->manufacturer_string = argv[i++];
 				break;
@@ -841,15 +849,25 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 			case arg_new_serno:
 				ee->serial_string = argv[i++];
 				break;
-			case arg_high_current_io:
-				//ee->high_current_io = match_arg(argv[i++], bool_strings) & 1;
-				break;
+
 			case arg_max_bus_power:
-				//ee->libftdi.max_power = unsigned_val(argv[i++], 0x1ff) / 2;
+				ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
 				break;
 			case arg_suspend_pull_down:
-				//ee->libftdi.suspend_pull_downs = unsigned_val(argv[i++], 0xff);
+				ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
 				break;
+			/* I2C */
+			case arg_i2c_slave_address:
+				ee->i2c_slave_addr = unsigned_val(argv[i++], 0xffff);
+				break;
+			case arg_i2c_device_id:
+				ee->i2c_device_id = unsigned_val(argv[i++], 0xffff);
+				break;
+			/* RS485 */
+			case arg_rs485_echo_suppression:
+				ee->rs485_echo_suppress = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			/* VID, PID, Ser No. */
 			case arg_old_vid:
 				ee->old_vid = unsigned_val(argv[i++], 0xffff);
 				break;
