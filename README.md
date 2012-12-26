@@ -58,10 +58,10 @@ Sets up configurable CBUS pins with a particular function. Have a look at `--hel
 
 The most commonly used are:
 
-* RxLED		*(pulses low when data is being sent from the host to the USB device)*
-* TxLED		*(pulses low when data is being sent from the USB device to the host)*
-* TxRxLED	*(pulses low when data is being sent either way)*
-* SLEEP		*(goes low when the interface is in USB suspend mode)*
+* `RxLED` *(pulses low when data is being sent from the host to the USB device)*
+* `TxLED` *(pulses low when data is being sent from the USB device to the host)*
+* `TxRxLED` *(pulses low when data is being sent either way)*
+* `SLEEP` *(goes low when the interface is in USB suspend mode)*
 
 ### I2C
 
