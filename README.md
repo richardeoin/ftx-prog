@@ -38,7 +38,7 @@ sudo ./ftx_prog --invert [rs232 pin]
 
 This will invert the polarity of this pin on the chip. So if it was Active High it'll become Active Low and visa versa. You can use `--dump` to see if the pin is in its default state or not.
 
-The possible pins are
+The possible pins are:
 * txd
 * rxd
 * rts
@@ -49,6 +49,19 @@ The possible pins are
 * ri
 
 ### CBUS Pins
+
+```
+sudo ./ftx_prog --cbus [cbus pin number] [function]
+```
+
+Sets up configurable CBUS pins with a particular function. Have a look at `--help` to see them all, and §7.12 of [this application note](http://www.ftdichip.com/Support/Documents/AppNotes/AN_201_FT-X%20MTP%20Memory%20Configuration.pdf) to see what they all do.
+
+The most commonly used are:
+
+* RxLED		*(pulses low when data is being sent from the host to the USB device)*
+* TxLED		*(pulses low when data is being sent from the USB device to the host)*
+* TxRxLED	*(pulses low when data is being sent either way)*
+* SLEEP		*(goes low when the interface is in USB suspend mode)*
 
 ### I2C
 
