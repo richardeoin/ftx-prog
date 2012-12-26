@@ -38,6 +38,8 @@ static struct ftdi_context ftdi;
 static int verbose = 0;
 static const char *save_path = NULL, *restore_path = NULL;
 
+/* ------------ Bit Definitions for EEPROM Decoding ------------ */
+
 enum cbus_mode {
 	cbus_tristate	=  0,
 	cbus_rxled	=  1,
@@ -62,7 +64,6 @@ enum cbus_mode {
 	cbus_timestamp	= 20,
 	cbus_keep_awake	= 21,
 };
-
 enum misc_config {
 	bcd_enable		= 0x01,
 	force_power_enable	= 0x02,
@@ -102,7 +103,74 @@ enum peripheral_config {
 	invert_ri		= 0x80,
 };
 
-static const char *cbus_mode_strings[] = {
+/* ------------ Command Line Arguments ------------ */
+
+enum arg_type {
+	arg_help,
+	arg_dump,
+	arg_verbose,
+	arg_save,
+	arg_restore,
+	arg_cbus,
+	arg_manufacturer,
+	arg_product,
+	arg_old_serno,
+	arg_new_serno,
+	arg_max_bus_power,
+	arg_high_current_io,
+	arg_suspend_pull_down,
+	arg_old_vid,
+	arg_old_pid,
+	arg_new_vid,
+	arg_new_pid,
+	arg_invert,
+};
+
+/* ------------ Strings for argument parsing ------------ */
+
+static const char* arg_type_strings[] = {
+	"--help",
+	"--dump",
+	"--verbose",
+	"--save",
+	"--restore",
+	"--cbus",
+	"--manufacturer",
+	"--product",
+	"--old-serial-number",
+	"--new-serial-number",
+	"--max-bus-power",
+	"--high-current-io",
+	"--suspend-pull-down",
+	"--old-vid",
+	"--old-pid",
+	"--new-vid",
+	"--new-pid",
+	"--invert",
+	NULL
+};
+static const char* rs232_strings[] = {
+	"txd",
+	"rxd",
+	"rts",
+	"cts",
+	"dtr",
+	"dsr",
+	"dcd",
+	"ri",
+	NULL
+};
+static const char* cbus_strings[] = {
+	"0",
+	"1",
+	"2",
+	"3",
+	"4",
+	"5",
+	"6",
+	NULL
+};
+static const char* cbus_mode_strings[] = {
 	"Tristate",
 	"RxLED",
 	"TxLED",
@@ -128,88 +196,13 @@ static const char *cbus_mode_strings[] = {
 	NULL
 };
 
-enum arg_type {
-	arg_help,
-	arg_dump,
-	arg_verbose,
-	arg_save,
-	arg_restore,
-	arg_cbus0,
-	arg_cbus1,
-	arg_cbus2,
-	arg_cbus3,
-	arg_cbus4,
-	arg_cbus5,
-	arg_cbus6,
-	arg_manufacturer,
-	arg_product,
-	arg_old_serno,
-	arg_new_serno,
-	arg_max_bus_power,
-	arg_high_current_io,
-	arg_suspend_pull_down,
-	arg_old_vid,
-	arg_old_pid,
-	arg_new_vid,
-	arg_new_pid,
-	arg_invert_txd,
-	arg_invert_rxd,
-	arg_invert_rts,
-	arg_invert_cts,
-	arg_invert_dtr,
-	arg_invert_dsr,
-	arg_invert_dcd,
-	arg_invert_ri,
-};
-
-static const char *arg_type_strings[] = {
-	"--help",
-	"--dump",
-	"--verbose",
-	"--save",
-	"--restore",
-	"--cbus0",
-	"--cbus1",
-	"--cbus2",
-	"--cbus3",
-	"--cbus4",
-	"--cbus5",
-	"--cbus6",
-	"--manufacturer",
-	"--product",
-	"--old-serial-number",
-	"--new-serial-number",
-	"--max-bus-power",
-	"--high-current-io",
-	"--suspend-pull-down",
-	"--old-vid",
-	"--old-pid",
-	"--new-vid",
-	"--new-pid",
-	"--invert-txd",
-	"--invert-rxd",
-	"--invert-rts",
-	"--invert-cts",
-	"--invert-dtr",
-	"--invert-dsr",
-	"--invert-dcd",
-	"--invert-ri",
-	NULL
-};
-
 static const char *arg_type_help[] = {
-	"   # (show this help text)",
-	"   # (dump eeprom settings to stdout))",
-	"# (show debug info and raw eeprom contents)",
-	"   # (save original eeprom contents to file)",
-	"# (restore initial eeprom contents from file)",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
-	"",
+	"   			   # (show this help text)",
+	"			   # (dump eeprom settings to stdout)",
+	"			   # (show debug info and raw eeprom contents)",
+	"			   # (save original eeprom contents to file)",
+	"			   # (restore initial eeprom contents from file)",
+	"[cbus]",
 	"     <string>  # (new USB manufacturer string)",
 	"          <string>  # (new USB product name string)",
 	"<string>  # (current serial number of device to be reprogrammed)",
@@ -217,18 +210,11 @@ static const char *arg_type_help[] = {
 	"    <number>  # (max bus current in milli-amperes)",
 	"  [on|off]  # (enable high [6mA @ 5V] drive current on CBUS pins)",
 	"[on|off]  # (force I/O pins into logic low state on suspend)",
-	"  <number>  # (current vendor id of device to be reprogrammed, eg. 0x0403)",
-	"  <number>  # (current product id of device to be reprogrammed, eg. 0x6001)",
-	"  <number>  # (new/custom vendor id to be programmed)",
-	"  <number>  # (new/custom product id be programmed)",
-	" Inverts the current value of TXD",
-	" Inverts the current value of RXD",
-	" Inverts the current value of RTS",
-	" Inverts the current value of CTS",
-	" Inverts the current value of DTR",
-	" Inverts the current value of DSR",
-	" Inverts the current value of DCD",
-	"  Inverts the current value of RI",
+	"		 <number>  # (current vendor id of device to be reprogrammed, eg. 0x0403)",
+	"		 <number>  # (current product id of device to be reprogrammed, eg. 0x6001)",
+	"		 <number>  # (new/custom vendor id to be programmed)",
+	"		 <number>  # (new/custom product id be programmed)",
+	"[invert]",
 };
 
 static const char *bool_strings[] = {
@@ -464,7 +450,7 @@ static unsigned short verify_crc (void *addr, int len)
 
 	if (crc != actual) {
 		fprintf(stderr, "Bad CRC: crc=0x%04x, actual=0x%04x\n", crc, actual);
-		//exit(EINVAL);
+		exit(EINVAL);
 	}
 	if (verbose) printf("CRC: Okay (0x%04x)\n", crc);
 	return crc;
@@ -513,14 +499,14 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 	memset(eeprom, 0, len);
 	
 	/* Misc Config */
-	if (ee->bcd_enable)				eeprom[0x00] |= bcd_enable;
+	if (ee->bcd_enable)			eeprom[0x00] |= bcd_enable;
 	if (ee->force_power_enable)		eeprom[0x00] |= force_power_enable;
 	if (ee->deactivate_sleep)		eeprom[0x00] |= deactivate_sleep;
 	if (ee->rs485_echo_suppress)		eeprom[0x00] |= rs485_echo_suppress;
-	if (ee->ext_osc)					eeprom[0x00] |= ext_osc;
+	if (ee->ext_osc)				eeprom[0x00] |= ext_osc;
 	if (ee->ext_osc_feedback_en)		eeprom[0x00] |= ext_osc_feedback_en;
 	if (ee->vbus_sense_alloc)		eeprom[0x00] |= vbus_sense_alloc;
-	if (ee->load_vcp)				eeprom[0x00] |= load_vcp;
+	if (ee->load_vcp)			eeprom[0x00] |= load_vcp;
 	
 	/* USB VID/PID */
 	eeprom[0x02] = ee->usb_vid & 0xFF;
@@ -541,26 +527,26 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 	/* Device and perhiperal control */
 	if (ee->suspend_pull_down)		eeprom[0x0A] |= suspend_pull_down;
 	if (ee->serial_number_avail)		eeprom[0x0A] |= serial_number_avail;
-	if (ee->ft1248_cpol)				eeprom[0x0A] |= ft1248_cpol;
-	if (ee->ft1248_bord)				eeprom[0x0A] |= ft1248_bord;
+	if (ee->ft1248_cpol)			eeprom[0x0A] |= ft1248_cpol;
+	if (ee->ft1248_bord)			eeprom[0x0A] |= ft1248_bord;
 	if (ee->ft1248_flow_control)		eeprom[0x0A] |= ft1248_flow_control;
 	if (ee->disable_i2c_schmitt)		eeprom[0x0A] |= disable_i2c_schmitt;
-	if (ee->invert_txd)				eeprom[0x0B] |= invert_txd;
-	if (ee->invert_rxd)				eeprom[0x0B] |= invert_rxd;
-	if (ee->invert_rts)				eeprom[0x0B] |= invert_rts;
-	if (ee->invert_cts)				eeprom[0x0B] |= invert_cts;
-	if (ee->invert_dtr)				eeprom[0x0B] |= invert_dtr;
-	if (ee->invert_dsr)				eeprom[0x0B] |= invert_dsr;
-	if (ee->invert_dcd)				eeprom[0x0B] |= invert_dcd;
-	if (ee->invert_ri)				eeprom[0x0B] |= invert_ri;
+	if (ee->invert_txd)			eeprom[0x0B] |= invert_txd;
+	if (ee->invert_rxd)			eeprom[0x0B] |= invert_rxd;
+	if (ee->invert_rts)			eeprom[0x0B] |= invert_rts;
+	if (ee->invert_cts)			eeprom[0x0B] |= invert_cts;
+	if (ee->invert_dtr)			eeprom[0x0B] |= invert_dtr;
+	if (ee->invert_dsr)			eeprom[0x0B] |= invert_dsr;
+	if (ee->invert_dcd)			eeprom[0x0B] |= invert_dcd;
+	if (ee->invert_ri)			eeprom[0x0B] |= invert_ri;
 	
 	/* DBUS & CBUS Control */
 	eeprom[0x0C] |= (ee->dbus_drive_strength & dbus_drive_strength);
-	if (ee->dbus_slow_slew)		eeprom[0x0C] |= dbus_slow_slew;
-	if (ee->dbus_schmitt)		eeprom[0x0C] |= dbus_schmitt;
+	if (ee->dbus_slow_slew)			eeprom[0x0C] |= dbus_slow_slew;
+	if (ee->dbus_schmitt)			eeprom[0x0C] |= dbus_schmitt;
 	eeprom[0x0C] |= (ee->cbus_drive_strength & cbus_drive_strength) << 4;
-	if (ee->cbus_slow_slew)		eeprom[0x0C] |= cbus_slow_slew;
-	if (ee->cbus_schmitt)		eeprom[0x0C] |= cbus_schmitt;
+	if (ee->cbus_slow_slew)			eeprom[0x0C] |= cbus_slow_slew;
+	if (ee->cbus_schmitt)			eeprom[0x0C] |= cbus_schmitt;
 	
 	/* eeprom[0x0D] is unused */
 	
@@ -569,7 +555,6 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 		fprintf(stderr, "Failed to encode, strings too long to fit in string memory area!\n");
 		exit(EINVAL);
 	}
-	
 	ee_encode_string(ee->manufacturer_string, &eeprom[0x0E], &eeprom[0x0F], eeprom, &string_desc_addr);
 	ee_encode_string(ee->product_string, &eeprom[0x10], &eeprom[0x11], eeprom, &string_desc_addr);
 	ee_encode_string(ee->serial_string, &eeprom[0x12], &eeprom[0x13], eeprom, &string_desc_addr);
@@ -688,6 +673,24 @@ static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 
 static const char *myname;
 
+/*
+ * Prints a human-readable expression showing all the possibilities for an option
+ */
+static void print_options(FILE *fp, const char** options)
+{
+	int j;
+	
+	fprintf(fp, "  [");
+	for (j = 0; options[j];) {
+		fprintf(fp, "%s", options[j]);
+		if (options[++j])
+			fprintf(fp, "|");
+	}
+	fprintf(fp, "]");
+}
+/*
+ * Prints a human readable help text.
+ */
 static void show_help (FILE *fp)
 {
 	int i;
@@ -695,21 +698,20 @@ static void show_help (FILE *fp)
 	fprintf(fp, "\nUsage:  %s [<arg> <val>]..\n", myname);
 	fprintf(fp, "\nwhere <arg> must be any of:\n");
 
-	for (i = 0; arg_type_strings[i]; ++i) {
+	for (i = 0; arg_type_strings[i]; ++i) { /* For each argument */
+		/* Get the help string */
 		const char *val = arg_type_help[i];
+		/* Print its name */
 		fprintf(fp, "    %s", arg_type_strings[i]);
-		if (val) {
-			if (*val) {
+		
+		if (val) { /* If there is a help string */
+			if (strcmp(val, "[cbus]") == 0) {
+				fprintf(fp, "  [1..%d]", CBUS_COUNT);
+				print_options(fp, cbus_mode_strings);
+			} else if (strcmp(val, "[invert]") == 0) {
+				print_options(fp, rs232_strings);
+			} else {
 				fprintf(fp, "  %s", val);
-			} else {  /* cbus args */
-				int j;
-				fprintf(fp, "  [");
-				for (j = 0; cbus_mode_strings[j];) {
-					fprintf(fp, "%s", cbus_mode_strings[j]);
-					if (cbus_mode_strings[++j])
-						fprintf(fp, "|");
-				}
-				fprintf(fp, "]");
 			}
 		}
 		fputc('\n', fp);
@@ -740,8 +742,7 @@ static int ee_write(unsigned char *eeprom, int len)
 		exit(EIO);
 	}
 		
-	for (i = 0; i < len/2; i++)
-	{
+	for (i = 0; i < len/2; i++) {
 		if (ftdi_write_eeprom_location(&ftdi, i, eeprom[i*2] | (eeprom[(i*2)+1] << 8))) {
 			fprintf(stderr, "ftdi_write_eeprom_location() failed: %s\n", ftdi_get_error_string(&ftdi));
 			exit(EIO);
@@ -793,101 +794,77 @@ static unsigned long unsigned_val (const char *arg, unsigned long max)
 }
 static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 {
-	int i;
+	int i; int c;
 
 	for (i = 1; i < argc;) {
 		int arg;
 		arg = match_arg(argv[i++], arg_type_strings);
 		switch (arg) {
-		case arg_help:
-			show_help(stdout);
-			exit(1);
-		case arg_dump:
-			continue;
-		case arg_verbose:
-			verbose = 1;
-			continue;
-		case arg_invert_txd:
-			ee->invert_txd = !ee->invert_txd;
-			continue;
-		case arg_invert_rxd:
-			ee->invert_rxd = !ee->invert_rxd;
-			continue;
-		case arg_invert_rts:
-			ee->invert_rts = !ee->invert_rts;
-			continue;
-		case arg_invert_cts:
-			ee->invert_cts = !ee->invert_cts;
-			continue;
-		case arg_invert_dtr:
-			ee->invert_dtr = !ee->invert_dtr;
-			continue;
-		case arg_invert_dsr:
-			ee->invert_dsr = !ee->invert_dsr;
-			continue;
-		case arg_invert_dcd:
-			ee->invert_dcd = !ee->invert_dcd;
-			continue;
-		case arg_invert_ri:
-			ee->invert_ri = !ee->invert_ri;
-			continue;
+			case arg_help:
+				show_help(stdout);
+				exit(1);
+			case arg_dump:
+				continue;
+			case arg_verbose:
+				verbose = 1;
+				continue;
+			case arg_invert:
+				switch(match_arg(argv[i++], rs232_strings)) {
+					case 0:	ee->invert_txd = !ee->invert_txd; break;
+					case 1:	ee->invert_rxd = !ee->invert_rxd; break;
+					case 2:	ee->invert_rts = !ee->invert_rts; break;
+					case 3:	ee->invert_cts = !ee->invert_cts; break;
+					case 4:	ee->invert_dtr = !ee->invert_dtr; break;
+					case 5:	ee->invert_dsr = !ee->invert_dsr; break;
+					case 6:	ee->invert_dcd = !ee->invert_dcd; break;
+					case 7:	ee->invert_ri = !ee->invert_ri; break;
+				}
 		}
-		if (i == argc) {
-			fprintf(stderr, "%s: missing %s value\n", argv[i-2], argv[i-1]);
-			exit(EINVAL);
-		}
+
 		switch (arg) {
-		case arg_save:
-			save_path = argv[i++];
-			break;
-		case arg_restore:
-			restore_path = argv[i++];
-			break;
-		case arg_cbus0:
-		case arg_cbus1:
-		case arg_cbus2:
-		case arg_cbus3:
-		case arg_cbus4:
-		case arg_cbus5:
-		case arg_cbus6:
-			ee->cbus[arg - arg_cbus0] = match_arg(argv[i++], cbus_mode_strings);
-			break;
-		case arg_manufacturer:
-			ee->manufacturer_string = argv[i++];
-			break;
-		case arg_product:
-			ee->product_string = argv[i++];
-			break;
-		case arg_new_serno:
-			ee->serial_string = argv[i++];
-			break;
-		case arg_high_current_io:
-			//ee->high_current_io = match_arg(argv[i++], bool_strings) & 1;
-			break;
-		case arg_max_bus_power:
-			//ee->libftdi.max_power = unsigned_val(argv[i++], 0x1ff) / 2;
-			break;
-		case arg_suspend_pull_down:
-			//ee->libftdi.suspend_pull_downs = unsigned_val(argv[i++], 0xff);
-			break;
-		case arg_old_vid:
-			ee->old_vid = unsigned_val(argv[i++], 0xffff);
-			break;
-		case arg_old_pid:
-			ee->old_pid = unsigned_val(argv[i++], 0xffff);
-			break;
-		case arg_old_serno:
-			ee->old_serno = argv[i++];
-			break;
-		case arg_new_vid:
-			ee->usb_vid = unsigned_val(argv[i++], 0xffff);
-			break;
-		case arg_new_pid:
-			ee->usb_pid = unsigned_val(argv[i++], 0xffff);
-			break;
-		default:
-			fprintf(stderr, "bad args\n");
-			exit(EINVAL);
+			case arg_save:
+				save_path = argv[i++];
+				break;
+			case arg_restore:
+				restore_path = argv[i++];
+				break;
+			case arg_cbus:
+				c = match_arg(argv[i++], cbus_strings);
+				ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
+				break;
+			case arg_manufacturer:
+				ee->manufacturer_string = argv[i++];
+				break;
+			case arg_product:
+				ee->product_string = argv[i++];
+				break;
+			case arg_new_serno:
+				ee->serial_string = argv[i++];
+				break;
+			case arg_high_current_io:
+				//ee->high_current_io = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			case arg_max_bus_power:
+				//ee->libftdi.max_power = unsigned_val(argv[i++], 0x1ff) / 2;
+				break;
+			case arg_suspend_pull_down:
+				//ee->libftdi.suspend_pull_downs = unsigned_val(argv[i++], 0xff);
+				break;
+			case arg_old_vid:
+				ee->old_vid = unsigned_val(argv[i++], 0xffff);
+				break;
+			case arg_old_pid:
+				ee->old_pid = unsigned_val(argv[i++], 0xffff);
+				break;
+			case arg_old_serno:
+				ee->old_serno = argv[i++];
+				break;
+			case arg_new_vid:
+				ee->usb_vid = unsigned_val(argv[i++], 0xffff);
+				break;
+			case arg_new_pid:
+				ee->usb_pid = unsigned_val(argv[i++], 0xffff);
+				break;
 		}
 	}
 }

@@ -24,7 +24,7 @@ sudo ./ftx_prog
 
 This should give you full details on all the possible options.
 
-### Displaying Current Settings
+### Display Current Settings
 
 ```
 sudo ./ftx_prog --dump
