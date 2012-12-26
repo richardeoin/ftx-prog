@@ -73,6 +73,10 @@ The most commonly used are:
 
 ### Misc
 
+## License
+
+GPL v2
+
 ## Credits
 
 Modified for the FT-X series by Richard Meadows 2012

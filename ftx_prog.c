@@ -118,7 +118,10 @@ enum arg_type {
 	arg_new_serno,
 	arg_max_bus_power,
 	arg_suspend_pull_down,
-	
+	arg_ft1248_cpol,
+	arg_ft1248_bord,
+	arg_ft1248_flow_control,
+	arg_i2c_schmitt,
 	arg_i2c_slave_address,
 	arg_i2c_device_id,
 	arg_rs485_echo_suppression,
@@ -145,6 +148,10 @@ static const char* arg_type_strings[] = {
 	"--new-serial-number",
 	"--max-bus-power",
 	"--suspend-pull-down",
+	"--ft1248-cpol",
+	"--ft1248-bord",
+	"--ft1248-flow-control",
+	"--i2c-schmitt",
 	"--i2c-slave-address",
 	"--i2c-device-id",
 	"--rs485-echo-supp",
@@ -203,41 +210,53 @@ static const char* cbus_mode_strings[] = {
 };
 
 static const char *arg_type_help[] = {
-	"   			   # (show this help text)",
-	"			   # (dump eeprom settings to stdout)",
-	"			   # (show debug info and raw eeprom contents)",
-	"			   # (save original eeprom contents to file)",
-	"			   # (restore initial eeprom contents from file)",
+	"   				    # (show this help text)",
+	"				    # (dump eeprom settings to stdout)",
+	"				    # (show debug info and raw eeprom contents)",
+	"				    # (save original eeprom contents to file)",
+	"				    # (restore initial eeprom contents from file)",
 	"[cbus]",
-	"     <string>  # (new USB manufacturer string)",
-	"          <string>  # (new USB product name string)",
-	"<string>  # (current serial number of device to be reprogrammed)",
-	"<string>  # (new USB serial number string)",
-	"    <number>  # (max bus current in milli-amperes)",
-	"[on|off]  # (force I/O pins into logic low state on suspend)",
-	"<number>  # (i2c slave address)",
-	"	 <number>  # (i2c device id)",
-	"	 [on|off]  # (enable echo supression on the RS485 bus)",
-	"		 <number>  # (current vendor id of device to be reprogrammed, eg. 0x0403)",
-	"		 <number>  # (current product id of device to be reprogrammed, eg. 0x6001)",
-	"		 <number>  # (new/custom vendor id to be programmed)",
-	"		 <number>  # (new/custom product id be programmed)",
+	"		 <string>   # (new USB manufacturer string)",
+	"			 <string>   # (new USB product name string)",
+	"	 <string>   # (current serial number of device to be reprogrammed)",
+	"	 <string>   # (new USB serial number string)",
+	"		 <number>   # (max bus current in milli-amperes)",
+	"	 [on|off]   # (force I/O pins into logic low state on suspend)",
+	"		 [high|low] # (set the clock polarity on the FT1248 interface to active high or active low)",
+	"		 [msb|lsb]  # (set the bit order on the FT1248 interface to msb first or lsb first)",
+	"	 [on|off]   # (flow control for FT1248 interface)",
+	"		 [on|off]   # (schmitt trigger on I2C interface)",
+	"	 <number>   # (I2C slave address)",
+	"		 <number>   # (I2C device ID)",
+	"		 [on|off]   # (enable echo supression on the RS485 bus)",
+	"			 <number>   # (current vendor id of device to be reprogrammed, eg. 0x0403)",
+	"			 <number>   # (current product id of device to be reprogrammed, eg. 0x6001)",
+	"			 <number>   # (new/custom vendor id to be programmed)",
+	"			 <number>   # (new/custom product id be programmed)",
 	"[invert]",
 };
 
 static const char *bool_strings[] = {
-	"True",
 	"False",
-	"true",
+	"True",
 	"false",
+	"true",
+	"Off",
+	"On",
 	"off",
 	"on",
 	"0",
 	"1",
+	"No",
+	"Yes",
 	"no",
 	"yes",
 	"disable",
 	"enable",
+	"low",
+	"high",
+	"msb",
+	"lsb",
 };
 
 struct eeprom_fields {
@@ -353,8 +372,8 @@ static void dumpmem (const char *msg, void *addr, int len)
  */
 const char* print_bool(char value)
 {
-	if (value) return bool_strings[0];
-	return bool_strings[1];
+	if (value) return bool_strings[1];
+	return bool_strings[0];
 }
 /**
  * Prints out the current FT-X EEPROM Configuration
@@ -367,7 +386,7 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	Battery Charge Detect (BCD) Enabled = %s\n", print_bool(ee->bcd_enable));
 	printf("	Force Power Enable Signal on CBUS = %s\n", print_bool(ee->force_power_enable));
 	printf("	Deactivate Sleep in Battery Charge Mode = %s\n", print_bool(ee->deactivate_sleep));
-	printf("	RS485 Echo Suppression Enabled = %s\n", print_bool(ee->rs485_echo_suppress));
+	
 	printf("	External Oscillator Enabled = %s\n", print_bool(ee->ext_osc));
 	printf("	External Oscillator Feedback Resistor Enabled = %s\n", print_bool(ee->ext_osc_feedback_en));
 	printf("	CBUS pin allocated to VBUS Sense Mode = %s\n", print_bool(ee->vbus_sense_alloc));
@@ -388,10 +407,13 @@ static void ee_dump (struct eeprom_fields *ee)
 	/* Device and perhiperal control */
 	printf("	Pins Pulled Down on USB Suspend = %s\n", print_bool(ee->suspend_pull_down));
 	printf("	Indicate USB Serial Number Available = %s\n", print_bool(ee->serial_number_avail));
+	
+	printf("FT1248\n");
 	printf("	FT1248 Clock Polarity = %s\n", ee->ft1248_cpol ? "Active High":"Active Low");
 	printf("	FT1248 Bit Order = %s\n", ee->ft1248_bord ? "LSB to MSB":"MSB to LSB");
 	printf("	FT1248 Flow Control Enabled = %s\n",  print_bool(ee->ft1248_flow_control));
-	printf("	I2C Schmitt Triggers Disabled = %s\n",  print_bool(ee->disable_i2c_schmitt));
+
+	printf("RS232\n");
 	printf("	Invert TXD = %s\n", print_bool(ee->invert_txd));
 	printf("	Invert RXD = %s\n", print_bool(ee->invert_rxd));
 	printf("	Invert RTS = %s\n", print_bool(ee->invert_rts));
@@ -400,6 +422,9 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	Invert DSR = %s\n", print_bool(ee->invert_dsr));
 	printf("	Invert DCD = %s\n", print_bool(ee->invert_dcd));
 	printf("	Invert RI = %s\n", print_bool(ee->invert_ri));
+	
+	printf("RS485\n");
+	printf("	RS485 Echo Suppression Enabled = %s\n", print_bool(ee->rs485_echo_suppress));
 	
 	/* DBUS & CBUS Control */
 	printf("	DBUS Drive Strength = %dmA\n", 4 * (ee->dbus_drive_strength+1));
@@ -415,11 +440,15 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	Serial Number = %s\n", ee->serial_string);
 	
 	/* I2C */
+	printf("I2C\n");
 	printf("	I2C Slave Address = %d \n", ee->i2c_slave_addr);
 	printf("	I2C Device ID = %d \n", ee->i2c_device_id);
+	printf("	I2C Schmitt Triggers Disabled = %s\n",  print_bool(ee->disable_i2c_schmitt));
 
+	/* CBUS */
+	printf("CBUS\n");
 	for (c = 0; c < CBUS_COUNT; ++c) {
-		printf("		cbus[%u] = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
+		printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
 	}
 };
 
@@ -855,6 +884,19 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 				break;
 			case arg_suspend_pull_down:
 				ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			/* FT1248 */
+			case arg_ft1248_cpol:
+				ee->ft1248_cpol = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			case arg_ft1248_bord:
+				ee->ft1248_bord = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			case arg_ft1248_flow_control:
+				ee->ft1248_flow_control = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			case arg_i2c_schmitt: /* The command line arg is enabled +ve, the eeprom is disabled +ve */
+				ee->disable_i2c_schmitt = !(match_arg(argv[i++], bool_strings) & 1);
 				break;
 			/* I2C */
 			case arg_i2c_slave_address:
