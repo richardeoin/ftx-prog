@@ -36,7 +36,7 @@ sudo ./ftx_prog --dump
 sudo ./ftx_prog --cbus [cbus pin number] [function]
 ```
 
-Sets up configurable CBUS pins with a particular function. Have a look at `--help` to see all the possible functions, and §7.12 of [this application note](http://www.ftdichip.com/Support/Documents/AppNotes/AN_201_FT-X%20MTP%20Memory%20Configuration.pdf) to see what they all do. Don't forget that the pin number are zero based, so `--cbus 0` corresponds to the `CBUS0` pin.
+Sets up configurable CBUS pins with a particular function. Have a look at `--help` to see all the possible functions, and §7.12 of [this application note](http://www.ftdichip.com/Support/Documents/AppNotes/AN_201_FT-X%20MTP%20Memory%20Configuration.pdf) to see what they all do. Don't forget that the pin numbers are zero based, so `--cbus 0` corresponds to the `CBUS0` pin.
 
 The most commonly used are:
 
