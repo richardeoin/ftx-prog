@@ -127,6 +127,14 @@ Used to enable echo supression if the interface is being used in a RS-485 system
 
 There are other configuration options that have not yet been implemented in the user interface. Support for the user configurable area in the EEPROM is also a possibility.
 
+## Workarounds for FT-X devices
+
+### All
+
+Due to an error in the Silicon Revisions A, B and C
+
+> the transfer of data over USB stops unexpectedly
+
 ## License
 
 GPL v2
