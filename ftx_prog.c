@@ -118,6 +118,8 @@ enum arg_type {
 	arg_new_serno,
 	arg_max_bus_power,
 	arg_suspend_pull_down,
+	arg_load_vcp,
+	arg_remote_wakeup,
 	arg_ft1248_cpol,
 	arg_ft1248_bord,
 	arg_ft1248_flow_control,
@@ -148,6 +150,8 @@ static const char* arg_type_strings[] = {
 	"--new-serial-number",
 	"--max-bus-power",
 	"--suspend-pull-down",
+	"--load-vcp",
+	"--remote-wakeup",
 	"--ft1248-cpol",
 	"--ft1248-bord",
 	"--ft1248-flow-control",
@@ -222,6 +226,8 @@ static const char *arg_type_help[] = {
 	"	 <string>   # (new USB serial number string)",
 	"		 <number>   # (max bus current in milli-amperes)",
 	"	 [on|off]   # (force I/O pins into logic low state on suspend)",
+	"		 [on|off]   # (controls if the VCP drivers are loaded)",
+	"		 [on|off]   # (allows the interface to be woken up by something other than USB)",
 	"		 [high|low] # (set the clock polarity on the FT1248 interface to active high or active low)",
 	"		 [msb|lsb]  # (set the bit order on the FT1248 interface to msb first or lsb first)",
 	"	 [on|off]   # (flow control for FT1248 interface)",
@@ -889,6 +895,12 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 				break;
 			case arg_suspend_pull_down:
 				ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			case arg_load_vcp:
+				ee->load_vcp = match_arg(argv[i++], bool_strings) & 1;
+				break;
+			case arg_remote_wakeup:
+				ee->remote_wakeup = match_arg(argv[i++], bool_strings) & 1;
 				break;
 			/* FT1248 */
 			case arg_ft1248_cpol:
