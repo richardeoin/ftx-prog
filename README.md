@@ -30,6 +30,21 @@ This should give you full details on all the possible options.
 sudo ./ftx_prog --dump
 ```
 
+### CBUS Pins
+
+```
+sudo ./ftx_prog --cbus [cbus pin number] [function]
+```
+
+Sets up configurable CBUS pins with a particular function. Have a look at `--help` to see all the possible functions, and §7.12 of [this application note](http://www.ftdichip.com/Support/Documents/AppNotes/AN_201_FT-X%20MTP%20Memory%20Configuration.pdf) to see what they all do. Don't forget that the pin number are zero based, so `--cbus 0` corresponds to the `CBUS0` pin.
+
+The most commonly used are:
+
+* `RxLED` *(pulses low when data is being sent from the host to the USB device)*
+* `TxLED` *(pulses low when data is being sent from the USB device to the host)*
+* `TxRxLED` *(pulses low when data is being sent either way)*
+* `SLEEP` *(goes low when the interface is in USB suspend mode)*
+
 ### Inverting RS232 Signals
 `FT230X` and `FT231X` only
 
@@ -47,24 +62,9 @@ The possible pins are:
 * `dtr` *Data Terminal Ready output pin*
 * `dsr` *Data Set Ready input pin*
 * `dcd` *Data Carrier Detect input pin*
-* `ri` *Ring Indicator Input*
+* `ri` *Ring Indicator input pin*
 
-Taking `RI` low (or high when polarity is inverted) for > 20ms will resume the PC USB host controller from suspend if remote wakeup have been enabled using `--remote-wakeup on`.
-
-### CBUS Pins
-
-```
-sudo ./ftx_prog --cbus [cbus pin number] [function]
-```
-
-Sets up configurable CBUS pins with a particular function. Have a look at `--help` to see all the possible functions, and §7.12 of [this application note](http://www.ftdichip.com/Support/Documents/AppNotes/AN_201_FT-X%20MTP%20Memory%20Configuration.pdf) to see what they all do. Don't forget that the pin number are zero based, so `--cbus 0` corresponds to the `CBUS0` pin.
-
-The most commonly used are:
-
-* `RxLED` *(pulses low when data is being sent from the host to the USB device)*
-* `TxLED` *(pulses low when data is being sent from the USB device to the host)*
-* `TxRxLED` *(pulses low when data is being sent either way)*
-* `SLEEP` *(goes low when the interface is in USB suspend mode)*
+Taking `RI` low (or high when polarity is inverted) for > 20ms will resume the USB host controller from suspend if remote wakeup has been enabled using `--remote-wakeup on`.
 
 ### I2C
 `FT200XD` and `FT201X` only
