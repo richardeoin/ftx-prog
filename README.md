@@ -137,6 +137,8 @@ sudo ./ftx_prog --remote-wakeup [on|off]
 
 Allows the interface to be woken up by something other than USB.
 
+Use `sudo ./ftx_prog --help` to see details of all the command line options.
+
 *There are other configuration options that have not yet been implemented in the user interface. Support for the user configurable area in the EEPROM is also a possibility.*
 
 ## Workarounds for FT-X devices
@@ -146,7 +148,7 @@ Allows the interface to be woken up by something other than USB.
 Due to an error in the Silicon Revisions A, B and C of the FT-X series:
 
 > The device is put into suspend mode during a transfer of certain data patterns most notable with binary zeros. This can halt the data transfer in certain circumstances and will require the device to be reenumerated to recover.
-> NB. It is the presence of this data pattern on the USB bus regardless of whether the data is intended for the FT220X or other devices (e.g. a broadcast) on the bus that forces the suspend state.
+> NB. It is the presence of this data pattern on the USB bus regardless of whether the data is intended for the [FT-X] or other devices (e.g. a broadcast) on the bus that forces the suspend state.
 
 This can be fixed by connecting any `CBUS` pin to ground on the PCB and then configuring it as `KeepAwake#`. If you were to choose `CBUS0` then `sudo ./ftx_prog --cbus 0 Keep_Awake` will do the configuration.
 
