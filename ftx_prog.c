@@ -408,12 +408,14 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	Pins Pulled Down on USB Suspend = %s\n", print_bool(ee->suspend_pull_down));
 	printf("	Indicate USB Serial Number Available = %s\n", print_bool(ee->serial_number_avail));
 	
-	printf("FT1248\n");
+	printf(" FT1248\n");
+	printf("-------\n");
 	printf("	FT1248 Clock Polarity = %s\n", ee->ft1248_cpol ? "Active High":"Active Low");
 	printf("	FT1248 Bit Order = %s\n", ee->ft1248_bord ? "LSB to MSB":"MSB to LSB");
 	printf("	FT1248 Flow Control Enabled = %s\n",  print_bool(ee->ft1248_flow_control));
 
-	printf("RS232\n");
+	printf(" RS232\n");
+	printf("-------\n");
 	printf("	Invert TXD = %s\n", print_bool(ee->invert_txd));
 	printf("	Invert RXD = %s\n", print_bool(ee->invert_rxd));
 	printf("	Invert RTS = %s\n", print_bool(ee->invert_rts));
@@ -423,7 +425,8 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	Invert DCD = %s\n", print_bool(ee->invert_dcd));
 	printf("	Invert RI = %s\n", print_bool(ee->invert_ri));
 	
-	printf("RS485\n");
+	printf(" RS485\n");
+	printf("-------\n");
 	printf("	RS485 Echo Suppression Enabled = %s\n", print_bool(ee->rs485_echo_suppress));
 	
 	/* DBUS & CBUS Control */
@@ -440,13 +443,15 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	Serial Number = %s\n", ee->serial_string);
 	
 	/* I2C */
-	printf("I2C\n");
+	printf("  I2C\n");
+	printf("-------\n");
 	printf("	I2C Slave Address = %d \n", ee->i2c_slave_addr);
 	printf("	I2C Device ID = %d \n", ee->i2c_device_id);
 	printf("	I2C Schmitt Triggers Disabled = %s\n",  print_bool(ee->disable_i2c_schmitt));
 
 	/* CBUS */
-	printf("CBUS\n");
+	printf("  CBUS\n");
+	printf("-------\n");
 	for (c = 0; c < CBUS_COUNT; ++c) {
 		printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
 	}

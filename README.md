@@ -30,7 +30,8 @@ This should give you full details on all the possible options.
 sudo ./ftx_prog --dump
 ```
 
-### Inverting RS232 Signals `FT230X and FT231X only`
+### Inverting RS232 Signals
+`FT230X` and `FT231X` only
 
 ```
 sudo ./ftx_prog --invert [rs232 pin]
@@ -66,12 +67,51 @@ The most commonly used are:
 * `SLEEP` *(goes low when the interface is in USB suspend mode)*
 
 ### I2C
+`FT200XD` and `FT201X` only
 
 *Note: The functionality of these options is completely untested*
 
-### SPI / FT1248 
+```
+sudo ./ftx_prog --i2c-slave-address <number>
+```
+
+Sets the slave address of the FT-X on the I2C bus. For instance, `--i2c-slave-address 0x22` will restore the slave address to its default value.
+
+```
+sudo ./ftx_prog --i2c-schmitt [on|off]
+```
+
+The I2C pins have schmitt triggers which can be turned on or off.
+
+
+```
+sudo ./ftx_prog --i2c-device-id <number>
+```
+
+Sets the I2C device ID.
+
+### SPI / FT1248
+`FT220X` and `FT221X` only
 
 *Note: The functionality of these options is completely untested*
+
+```
+sudo ./ftx_prog --ft1248-cpol [high|low]
+```
+
+The clock on the SPI / FT1248 bus can either be active `high` (Like SPI `Mode 1`) or active `low` (Like SPI `Mode 3`).
+
+```
+sudo ./ftx_prog --ft1248-bord [msb|lsb]
+```
+
+The bit order on the SPI / FT1248 bus can be either `msb` first or `lsb` first.
+
+```
+sudo ./ftx_prog --ft1248-flow-control [on|off]
+```
+
+Turns on flow control when SS_n is inactive.
 
 ### RS485
 
@@ -84,6 +124,8 @@ sudo ./ftx_prog --rs485-echo-supp [on|off]
 Used to enable echo supression if the interface is being used in a RS-485 system.
 
 ### Misc
+
+There are other configuration options that have not yet been implemented in the user interface. Support for the user configurable area in the EEPROM is also a possibility.
 
 ## License
 
