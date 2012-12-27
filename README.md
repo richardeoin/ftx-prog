@@ -8,7 +8,7 @@ Install some prerequisites
 sudo apt-get install build-essential gcc make libftdi-dev
 ```
 
-then download and
+then [download](https://github.com/richardeoin/ftx-prog/archive/master.zip), unzip, open a terminal in the unzipped directory and
 
 ```
 make
