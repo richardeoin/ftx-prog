@@ -52,7 +52,7 @@ The most commonly used are:
 sudo ./ftx_prog --invert [rs232 pin]
 ```
 
-This will invert the polarity of this pin on the chip. So if it was Active High it'll become Active Low and visa versa. You can use `--dump` to see if the pin is in its default state or not.
+This will invert the polarity of this pin on the chip. So if it was Active High it'll become Active Low and vice versa. You can use `--dump` to see if the pin is in its default state or not.
 
 The possible pins are:
 * `txd` *The interface's data output pin*
