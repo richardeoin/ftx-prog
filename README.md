@@ -27,8 +27,12 @@ This should give you full details on all the possible options.
 ### Display Current Settings
 
 ```
-sudo ./ftx_prog --dump
+sudo ./ftx_prog --ftprog-strings --dump
 ```
+
+### `--ftprog-strings`
+
+The flag should be specified when compatibility with the string format used in the [FT Prog](http://www.ftdichip.com/Support/Utilities.htm#FT_Prog) utility is required. If it is not specified strings will be read and written in ASCII format.
 
 ### CBUS Pins
 
