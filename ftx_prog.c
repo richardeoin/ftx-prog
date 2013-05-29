@@ -37,6 +37,7 @@
 
 static struct ftdi_context ftdi;
 static int verbose = 0;
+static bool use_ftprog_strings = false;
 static const char *save_path = NULL, *restore_path = NULL;
 
 /* ------------ Bit Definitions for EEPROM Decoding ------------ */
@@ -112,6 +113,7 @@ enum arg_type {
 	arg_verbose,
 	arg_save,
 	arg_restore,
+	arg_ftprog_strings,
 	arg_cbus,
 	arg_manufacturer,
 	arg_product,
@@ -144,6 +146,7 @@ static const char* arg_type_strings[] = {
 	"--verbose",
 	"--save",
 	"--restore",
+	"--ftprog-strings",
 	"--cbus",
 	"--manufacturer",
 	"--product",
@@ -220,6 +223,7 @@ static const char *arg_type_help[] = {
 	"				    # (show debug info and raw eeprom contents)",
 	"			 <file>     # (save original eeprom contents to file)",
 	"			 <file>     # (restore initial eeprom contents from file)",
+	"                      # (support strings written by the FT Prog utility)",
 	"[cbus]",
 	"		 <string>   # (new USB manufacturer string)",
 	"			 <string>   # (new USB product name string)",
@@ -528,7 +532,7 @@ static int ee_check_strings(char* man, char* prod, char* ser)
  * Inserts a string into a buffer to be written out to the eeprom
  */
 static void ee_encode_string(char* str, unsigned char *ptr_field, unsigned char* len_field,
-			     unsigned char* eeprom, unsigned char* string_addr, bool use_ftprog_strings)
+			     unsigned char* eeprom, unsigned char* string_addr)
 {
   int original_length = strlen(str), length;
 
@@ -626,9 +630,9 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 		fprintf(stderr, "Failed to encode, strings too long to fit in string memory area!\n");
 		exit(EINVAL);
 	}
-	ee_encode_string(ee->manufacturer_string, &eeprom[0x0E], &eeprom[0x0F], eeprom, &string_desc_addr, true);
-	ee_encode_string(ee->product_string, &eeprom[0x10], &eeprom[0x11], eeprom, &string_desc_addr, true);
-	ee_encode_string(ee->serial_string, &eeprom[0x12], &eeprom[0x13], eeprom, &string_desc_addr, true);
+	ee_encode_string(ee->manufacturer_string, &eeprom[0x0E], &eeprom[0x0F], eeprom, &string_desc_addr);
+	ee_encode_string(ee->product_string, &eeprom[0x10], &eeprom[0x11], eeprom, &string_desc_addr);
+	ee_encode_string(ee->serial_string, &eeprom[0x12], &eeprom[0x13], eeprom, &string_desc_addr);
 	
 	/* I2C */
 	eeprom[0x14] = ee->i2c_slave_addr & 0xFF;
@@ -652,7 +656,7 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 /**
  * Extracts a string from the a buffer read from eeprom
  */
-static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigned char len, bool use_ftprog_strings)
+static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigned char len)
 {
 	char* str = malloc(len+1);
 	
@@ -734,9 +738,9 @@ static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 	/* eeprom[0x0D] is unused */
 	
 	/* Manufacturer, Product and Serial Number string */
-	ee->manufacturer_string = ee_decode_string(eeprom, eeprom+eeprom[0x0E], eeprom[0x0F], true);
-	ee->product_string = ee_decode_string(eeprom, eeprom+eeprom[0x10], eeprom[0x11], true);
-	ee->serial_string = ee_decode_string(eeprom, eeprom+eeprom[0x12], eeprom[0x13], true);
+	ee->manufacturer_string = ee_decode_string(eeprom, eeprom+eeprom[0x0E], eeprom[0x0F]);
+	ee->product_string = ee_decode_string(eeprom, eeprom+eeprom[0x10], eeprom[0x11]);
+	ee->serial_string = ee_decode_string(eeprom, eeprom+eeprom[0x12], eeprom[0x13]);
 	
 	/* I2C */
 	ee->i2c_slave_addr = eeprom[0x14] | (eeprom[0x15] << 8);
@@ -878,108 +882,111 @@ static unsigned long unsigned_val (const char *arg, unsigned long max)
 }
 static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 {
-	int i; int c;
+  int i; int c;
 
-	for (i = 1; i < argc;) {
-		int arg;
-		arg = match_arg(argv[i++], arg_type_strings);
-		switch (arg) {
-			case arg_help:
-				show_help(stdout);
-				exit(1);
-			case arg_dump:
-				break;
-			case arg_verbose:
-				verbose = 1;
-				break;
-			/* File operations */
-			case arg_save:
-				save_path = argv[i++];
-				break;
-			case arg_restore:
-				restore_path = argv[i++];
-				break;
-			case arg_cbus:
-				c = match_arg(argv[i++], cbus_strings);
-				ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
-				break;
-			case arg_invert:
-				switch(match_arg(argv[i++], rs232_strings)) {
-					case 0:	ee->invert_txd = !ee->invert_txd; break;
-					case 1:	ee->invert_rxd = !ee->invert_rxd; break;
-					case 2:	ee->invert_rts = !ee->invert_rts; break;
-					case 3:	ee->invert_cts = !ee->invert_cts; break;
-					case 4:	ee->invert_dtr = !ee->invert_dtr; break;
-					case 5:	ee->invert_dsr = !ee->invert_dsr; break;
-					case 6:	ee->invert_dcd = !ee->invert_dcd; break;
-					case 7:	ee->invert_ri = !ee->invert_ri; break;
-				}
-				break;
-			/* Strings */
-			case arg_manufacturer:
-				ee->manufacturer_string = argv[i++];
-				break;
-			case arg_product:
-				ee->product_string = argv[i++];
-				break;
-			case arg_new_serno:
-				ee->serial_string = argv[i++];
-				break;
-
-			case arg_max_bus_power:
-				ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
-				break;
-			case arg_suspend_pull_down:
-				ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
-				break;
-			case arg_load_vcp:
-				ee->load_vcp = match_arg(argv[i++], bool_strings) & 1;
-				break;
-			case arg_remote_wakeup:
-				ee->remote_wakeup = match_arg(argv[i++], bool_strings) & 1;
-				break;
-			/* FT1248 */
-			case arg_ft1248_cpol:
-				ee->ft1248_cpol = match_arg(argv[i++], bool_strings) & 1;
-				break;
-			case arg_ft1248_bord:
-				ee->ft1248_bord = match_arg(argv[i++], bool_strings) & 1;
-				break;
-			case arg_ft1248_flow_control:
-				ee->ft1248_flow_control = match_arg(argv[i++], bool_strings) & 1;
-				break;
-			case arg_i2c_schmitt: /* The command line arg is enabled +ve, the eeprom is disabled +ve */
-				ee->disable_i2c_schmitt = !(match_arg(argv[i++], bool_strings) & 1);
-				break;
-			/* I2C */
-			case arg_i2c_slave_address:
-				ee->i2c_slave_addr = unsigned_val(argv[i++], 0xffff);
-				break;
-			case arg_i2c_device_id:
-				ee->i2c_device_id = unsigned_val(argv[i++], 0xffff);
-				break;
-			/* RS485 */
-			case arg_rs485_echo_suppression:
-				ee->rs485_echo_suppress = match_arg(argv[i++], bool_strings) & 1;
-				break;
-			/* VID, PID, Ser No. */
-			case arg_old_vid:
-				ee->old_vid = unsigned_val(argv[i++], 0xffff);
-				break;
-			case arg_old_pid:
-				ee->old_pid = unsigned_val(argv[i++], 0xffff);
-				break;
-			case arg_old_serno:
-				ee->old_serno = argv[i++];
-				break;
-			case arg_new_vid:
-				ee->usb_vid = unsigned_val(argv[i++], 0xffff);
-				break;
-			case arg_new_pid:
-				ee->usb_pid = unsigned_val(argv[i++], 0xffff);
-				break;
-		}
+  for (i = 1; i < argc;) {
+    int arg;
+    arg = match_arg(argv[i++], arg_type_strings);
+    switch (arg) {
+      case arg_help:
+	show_help(stdout);
+	exit(1);
+      case arg_dump:
+	break;
+      case arg_verbose:
+	verbose = 1;
+	break;
+	/* File operations */
+      case arg_save:
+	save_path = argv[i++];
+	break;
+      case arg_restore:
+	restore_path = argv[i++];
+	break;
+      case arg_ftprog_strings:
+	use_ftprog_strings = true;
+	break;
+      case arg_cbus:
+	c = match_arg(argv[i++], cbus_strings);
+	ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
+	break;
+      case arg_invert:
+	switch(match_arg(argv[i++], rs232_strings)) {
+	  case 0:	ee->invert_txd = !ee->invert_txd; break;
+	  case 1:	ee->invert_rxd = !ee->invert_rxd; break;
+	  case 2:	ee->invert_rts = !ee->invert_rts; break;
+	  case 3:	ee->invert_cts = !ee->invert_cts; break;
+	  case 4:	ee->invert_dtr = !ee->invert_dtr; break;
+	  case 5:	ee->invert_dsr = !ee->invert_dsr; break;
+	  case 6:	ee->invert_dcd = !ee->invert_dcd; break;
+	  case 7:	ee->invert_ri = !ee->invert_ri; break;
 	}
+	break;
+	/* Strings */
+      case arg_manufacturer:
+	ee->manufacturer_string = argv[i++];
+	break;
+      case arg_product:
+	ee->product_string = argv[i++];
+	break;
+      case arg_new_serno:
+	ee->serial_string = argv[i++];
+	break;
+	
+      case arg_max_bus_power:
+	ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
+	break;
+      case arg_suspend_pull_down:
+	ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
+	break;
+      case arg_load_vcp:
+	ee->load_vcp = match_arg(argv[i++], bool_strings) & 1;
+	break;
+      case arg_remote_wakeup:
+	ee->remote_wakeup = match_arg(argv[i++], bool_strings) & 1;
+	break;
+	/* FT1248 */
+      case arg_ft1248_cpol:
+	ee->ft1248_cpol = match_arg(argv[i++], bool_strings) & 1;
+	break;
+      case arg_ft1248_bord:
+	ee->ft1248_bord = match_arg(argv[i++], bool_strings) & 1;
+	break;
+      case arg_ft1248_flow_control:
+	ee->ft1248_flow_control = match_arg(argv[i++], bool_strings) & 1;
+	break;
+      case arg_i2c_schmitt: /* The command line arg is enabled +ve, the eeprom is disabled +ve */
+	ee->disable_i2c_schmitt = !(match_arg(argv[i++], bool_strings) & 1);
+	break;
+	/* I2C */
+      case arg_i2c_slave_address:
+	ee->i2c_slave_addr = unsigned_val(argv[i++], 0xffff);
+	break;
+      case arg_i2c_device_id:
+	ee->i2c_device_id = unsigned_val(argv[i++], 0xffff);
+	break;
+	/* RS485 */
+      case arg_rs485_echo_suppression:
+	ee->rs485_echo_suppress = match_arg(argv[i++], bool_strings) & 1;
+	break;
+	/* VID, PID, Ser No. */
+      case arg_old_vid:
+	ee->old_vid = unsigned_val(argv[i++], 0xffff);
+	break;
+      case arg_old_pid:
+	ee->old_pid = unsigned_val(argv[i++], 0xffff);
+	break;
+      case arg_old_serno:
+	ee->old_serno = argv[i++];
+	break;
+      case arg_new_vid:
+	ee->usb_vid = unsigned_val(argv[i++], 0xffff);
+	break;
+      case arg_new_pid:
+	ee->usb_pid = unsigned_val(argv[i++], 0xffff);
+	break;
+    }
+  }
 }
 
 /* ------------ File Save / Restore ------------ */
