@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ftdi.h>
+#include <stdbool.h>
 
 #define MYVERSION	"0.1"
 
@@ -527,15 +528,37 @@ static int ee_check_strings(char* man, char* prod, char* ser)
  * Inserts a string into a buffer to be written out to the eeprom
  */
 static void ee_encode_string(char* str, unsigned char *ptr_field, unsigned char* len_field,
-			unsigned char* eeprom, unsigned char* start_addr)
+			     unsigned char* eeprom, unsigned char* string_addr, bool use_ftprog_strings)
 {
-	/* Setup these two fields */
-	*ptr_field = *start_addr;
-	*len_field = strlen(str);
-	/* Copy the strings into where we said we'd put them */
-	memcpy(eeprom + *start_addr, str, *len_field);
-	/* Move our start address forward */
-	*start_addr += *len_field;
+  int original_length = strlen(str), length;
+
+  if (use_ftprog_strings) {
+    length = strlen(str)*2 + 2;
+    char* ftstr = malloc(length);
+    
+    /* Encode a FT Prog compatible string */
+    ftstr[0] = length;
+    ftstr[1] = 3;
+
+    int in, out;
+    for (in = 0, out = 2; out < length; in++, out += 2) {
+      ftstr[out] = str[in];
+      ftstr[out+1] = 0;
+    }
+
+    str = ftstr;
+  } else {
+    length = original_length;
+  }
+
+  /* Copy the strings to the string area */
+  memcpy(eeprom + *string_addr, str, length);
+
+  /* Write the the two metadata fields */
+  *ptr_field = *string_addr;
+  *len_field = length;
+  /* Move the string area address forward */
+  *string_addr += *len_field;
 }
 /**
  * Encodes an eeprom_fields object into a buffer ready to be written out to the eeprom
@@ -603,9 +626,9 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 		fprintf(stderr, "Failed to encode, strings too long to fit in string memory area!\n");
 		exit(EINVAL);
 	}
-	ee_encode_string(ee->manufacturer_string, &eeprom[0x0E], &eeprom[0x0F], eeprom, &string_desc_addr);
-	ee_encode_string(ee->product_string, &eeprom[0x10], &eeprom[0x11], eeprom, &string_desc_addr);
-	ee_encode_string(ee->serial_string, &eeprom[0x12], &eeprom[0x13], eeprom, &string_desc_addr);
+	ee_encode_string(ee->manufacturer_string, &eeprom[0x0E], &eeprom[0x0F], eeprom, &string_desc_addr, true);
+	ee_encode_string(ee->product_string, &eeprom[0x10], &eeprom[0x11], eeprom, &string_desc_addr, true);
+	ee_encode_string(ee->serial_string, &eeprom[0x12], &eeprom[0x13], eeprom, &string_desc_addr, true);
 	
 	/* I2C */
 	eeprom[0x14] = ee->i2c_slave_addr & 0xFF;
@@ -629,14 +652,27 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 /**
  * Extracts a string from the a buffer read from eeprom
  */
-static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigned char len)
+static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigned char len, bool use_ftprog_strings)
 {
 	char* str = malloc(len+1);
 	
 	if (str != NULL) {
 		/* Copy the string from the EEPROM memory */
 		memcpy(str, ptr, len);
-		str[len] = '\0';
+		
+		/* Decode strings written by FT Prog correctly */
+		if (use_ftprog_strings) {
+
+		  /* Pick the actual ASCII characters out of the FT Prog encoded string */
+		  int in, out;
+		  for (in = 2, out = 0; in < len; in += 2, out++) {
+		    str[out] = str[in];
+		  }
+
+		  str[out] = '\0';
+		} else {
+		  str[len] = '\0';
+		}
 	}
 	
 	return str;
@@ -698,9 +734,9 @@ static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 	/* eeprom[0x0D] is unused */
 	
 	/* Manufacturer, Product and Serial Number string */
-	ee->manufacturer_string = ee_decode_string(eeprom, eeprom+eeprom[0x0E], eeprom[0x0F]);
-	ee->product_string = ee_decode_string(eeprom, eeprom+eeprom[0x10], eeprom[0x11]);
-	ee->serial_string = ee_decode_string(eeprom, eeprom+eeprom[0x12], eeprom[0x13]);
+	ee->manufacturer_string = ee_decode_string(eeprom, eeprom+eeprom[0x0E], eeprom[0x0F], true);
+	ee->product_string = ee_decode_string(eeprom, eeprom+eeprom[0x10], eeprom[0x11], true);
+	ee->serial_string = ee_decode_string(eeprom, eeprom+eeprom[0x12], eeprom[0x13], true);
 	
 	/* I2C */
 	ee->i2c_slave_addr = eeprom[0x14] | (eeprom[0x15] << 8);
