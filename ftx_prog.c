@@ -247,7 +247,7 @@ static const char *arg_type_help[] = {
 	"			 <number>   # (new/custom vendor id to be programmed)",
 	"			 <number>   # (new/custom product id be programmed)",
 	"[invert]",
-	"	 [on|off]   # (specify if chip is bus-powered or self-powered)",
+	"		 [on|off]   # (specify if chip is bus-powered or self-powered)",
 
 };
 
