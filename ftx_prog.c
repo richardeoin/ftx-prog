@@ -136,6 +136,7 @@ enum arg_type {
 	arg_new_vid,
 	arg_new_pid,
 	arg_invert,
+	arg_self_powered,
 };
 
 /* ------------ Strings for argument parsing ------------ */
@@ -168,6 +169,7 @@ static const char* arg_type_strings[] = {
 	"--new-vid",
 	"--new-pid",
 	"--invert",
+	"--self-powered",
 	NULL
 };
 static const char* rs232_strings[] = {
@@ -245,6 +247,8 @@ static const char *arg_type_help[] = {
 	"			 <number>   # (new/custom vendor id to be programmed)",
 	"			 <number>   # (new/custom product id be programmed)",
 	"[invert]",
+	"	 [on|off]   # (specify if chip is bus-powered or self-powered)",
+
 };
 
 static const char *bool_strings[] = {
@@ -936,6 +940,9 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
       case arg_max_bus_power:
 	ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
 	break;
+      case arg_self_powered:
+        ee->self_powered = match_arg(argv[i++], bool_strings) & 1;
+        break;
       case arg_suspend_pull_down:
 	ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
 	break;
