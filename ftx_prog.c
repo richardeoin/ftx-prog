@@ -37,7 +37,7 @@
 
 static struct ftdi_context ftdi;
 static int verbose = 0;
-static bool use_ftprog_strings = false;
+static bool use_8b_strings = false;
 static const char *save_path = NULL, *restore_path = NULL;
 
 /* ------------ Bit Definitions for EEPROM Decoding ------------ */
@@ -113,7 +113,7 @@ enum arg_type {
 	arg_verbose,
 	arg_save,
 	arg_restore,
-	arg_ftprog_strings,
+	arg_8b_strings,
 	arg_cbus,
 	arg_manufacturer,
 	arg_product,
@@ -147,7 +147,7 @@ static const char* arg_type_strings[] = {
 	"--verbose",
 	"--save",
 	"--restore",
-	"--ftprog-strings",
+	"--8bit-strings",
 	"--cbus",
 	"--manufacturer",
 	"--product",
@@ -225,7 +225,7 @@ static const char *arg_type_help[] = {
 	"				    # (show debug info and raw eeprom contents)",
 	"			 <file>     # (save original eeprom contents to file)",
 	"			 <file>     # (restore initial eeprom contents from file)",
-	"                      # (support strings written by the FT Prog utility)",
+	"                      # (byte strings)",
 	"[cbus]",
 	"		 <string>   # (new USB manufacturer string)",
 	"			 <string>   # (new USB product name string)",
@@ -540,7 +540,9 @@ static void ee_encode_string(char* str, unsigned char *ptr_field, unsigned char*
 {
   int original_length = strlen(str), length;
 
-  if (use_ftprog_strings) {
+  if (use_8b_strings) {
+    length = original_length;
+  } else {
     length = strlen(str)*2 + 2;
     char* ftstr = malloc(length);
     
@@ -555,8 +557,6 @@ static void ee_encode_string(char* str, unsigned char *ptr_field, unsigned char*
     }
 
     str = ftstr;
-  } else {
-    length = original_length;
   }
 
   /* Copy the strings to the string area */
@@ -669,7 +669,9 @@ static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigne
 		memcpy(str, ptr, len);
 		
 		/* Decode strings written by FT Prog correctly */
-		if (use_ftprog_strings) {
+		if (use_8b_strings) {
+		  str[len] = '\0';
+		} else {
 
 		  /* Pick the actual ASCII characters out of the FT Prog encoded string */
 		  int in, out;
@@ -678,8 +680,6 @@ static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigne
 		  }
 
 		  str[out] = '\0';
-		} else {
-		  str[len] = '\0';
 		}
 	}
 	
@@ -907,8 +907,8 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
       case arg_restore:
 	restore_path = argv[i++];
 	break;
-      case arg_ftprog_strings:
-	use_ftprog_strings = true;
+      case arg_8b_strings:
+	use_8b_strings = true;
 	break;
       case arg_cbus:
 	c = match_arg(argv[i++], cbus_strings);
