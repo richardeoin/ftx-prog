@@ -78,7 +78,7 @@ enum misc_config {
 };
 enum power_config {
 	remote_wakeup		= 0x10,
-	self_powered		= 0x20,
+	self_powered		= 0x40,
 };
 enum dbus_cbus_config {
 	dbus_drive_strength	= 0x03,
