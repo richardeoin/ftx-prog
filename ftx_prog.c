@@ -935,6 +935,7 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
 	break;
       case arg_new_serno:
 	ee->serial_string = argv[i++];
+	ee->serial_number_avail = strlen(ee->serial_string) > 0;
 	break;
 	
       case arg_max_bus_power:
