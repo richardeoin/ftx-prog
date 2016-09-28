@@ -1128,6 +1128,5 @@ int main (int argc, char *argv[])
 		ftdi_usb_reset(&ftdi);  /* Reset the device to force it to load the new settings */
 	}
 	
-	exit(EINVAL);
-	return 0;  /* never reached */
+	return 0;
 }
