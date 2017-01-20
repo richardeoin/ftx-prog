@@ -404,6 +404,11 @@ static void ee_dump (struct eeprom_fields *ee)
 	
 	printf("	External Oscillator Enabled = %s\n", print_bool(ee->ext_osc));
 	printf("	External Oscillator Feedback Resistor Enabled = %s\n", print_bool(ee->ext_osc_feedback_en));
+
+	ee->vbus_sense_alloc = 0;
+	for(c = 0; c < CBUS_COUNT; ++c)
+		if(ee->cbus[c] == cbus_vbus_sense)
+			ee->vbus_sense_alloc = 1;
 	printf("	CBUS pin allocated to VBUS Sense Mode = %s\n", print_bool(ee->vbus_sense_alloc));
 	printf("	Load Virtual COM Port (VCP) Drivers = %s\n", print_bool(ee->load_vcp));
 	
