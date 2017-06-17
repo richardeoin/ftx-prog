@@ -150,7 +150,6 @@ const struct args_required_t req_info[] =
     {arg_help, 0},
     {arg_dump, 0},
     {arg_verbose, 0},
-    {arg_verbose, 1},
     {arg_save, 1},
     {arg_restore, 1},
     {arg_8b_strings, 0},
@@ -549,7 +548,7 @@ static unsigned short verify_crc (void *addr, int len)
 
 	if (crc != actual) {
 		fprintf(stderr, "Bad CRC: crc=0x%04x, actual=0x%04x\n", crc, actual);
-		exit(EINVAL);
+                exit(EINVAL);
 	}
 	if (verbose) printf("CRC: Okay (0x%04x)\n", crc);
 	return crc;
