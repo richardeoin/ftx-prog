@@ -1,5 +1,6 @@
 /*
- * This is a Linux command-line alternative to the FTDI MProg/FTProg utilities for FTDI's FT-X series.
+ * This is a Linux command-line alternative to the FTDI MProg/FTProg
+ * utilities for FTDI's FT-X series.
  *
  * Modified for the FT-X series by Richard Meadows 2012.
  *
@@ -20,7 +21,7 @@
  * along with this program; see the file LICENSE.txt.  If not, write to
  * the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -130,7 +131,7 @@ enum arg_type {
 	arg_i2c_slave_address,
 	arg_i2c_device_id,
 	arg_rs485_echo_suppression,
-	
+
 	arg_old_vid,
 	arg_old_pid,
 	arg_new_vid,
@@ -284,20 +285,20 @@ struct eeprom_fields {
 	unsigned char ext_osc_feedback_en;
 	unsigned char vbus_sense_alloc;
 	unsigned char load_vcp;
-	
+
 	/* USB VID/PID */
 	unsigned short usb_vid;
 	unsigned short usb_pid;
-	
+
 	/* USB Release Number */
 	unsigned short usb_release_major;
 	unsigned short usb_release_minor;
-	
+
 	/* Max Power and Config */
 	unsigned char remote_wakeup;
 	unsigned char self_powered;
 	unsigned char max_power; /* Units of 2mA */
-	
+
 	/* Device and perhiperal control */
 	unsigned char suspend_pull_down;
 	unsigned char serial_number_avail;
@@ -313,7 +314,7 @@ struct eeprom_fields {
 	unsigned char invert_dsr;
 	unsigned char invert_dcd;
 	unsigned char invert_ri;
-	
+
 	/* DBUS & CBUS Control */
 	unsigned char dbus_drive_strength;
 	unsigned char dbus_slow_slew;
@@ -321,19 +322,19 @@ struct eeprom_fields {
 	unsigned char cbus_drive_strength;
 	unsigned char cbus_slow_slew;
 	unsigned char cbus_schmitt;
-	
+
 	/* Manufacturer, Product and Serial Number string */
 	char* manufacturer_string;
 	char* product_string;
 	char* serial_string;
-	
+
 	/* I2C */
 	unsigned short i2c_slave_addr;
 	unsigned int i2c_device_id;
-	
+
 	/* CBUS */
 	enum cbus_mode cbus[CBUS_COUNT];
-	
+
 	/* Other memory areas */
 	unsigned char user_mem[92];			/* user memory space */
 	unsigned char factory_config[32];	/* factory configuration values */
@@ -396,38 +397,52 @@ const char* print_bool(char value)
 static void ee_dump (struct eeprom_fields *ee)
 {
 	unsigned int c;
-	
+
 	/* Misc Config */
-	printf("	Battery Charge Detect (BCD) Enabled = %s\n", print_bool(ee->bcd_enable));
-	printf("	Force Power Enable Signal on CBUS = %s\n", print_bool(ee->force_power_enable));
-	printf("	Deactivate Sleep in Battery Charge Mode = %s\n", print_bool(ee->deactivate_sleep));
-	
+	printf("	Battery Charge Detect (BCD) Enabled = %s\n",
+           print_bool(ee->bcd_enable));
+	printf("	Force Power Enable Signal on CBUS = %s\n",
+           print_bool(ee->force_power_enable));
+	printf("	Deactivate Sleep in Battery Charge Mode = %s\n",
+           print_bool(ee->deactivate_sleep));
+
 	printf("	External Oscillator Enabled = %s\n", print_bool(ee->ext_osc));
-	printf("	External Oscillator Feedback Resistor Enabled = %s\n", print_bool(ee->ext_osc_feedback_en));
-	printf("	CBUS pin allocated to VBUS Sense Mode = %s\n", print_bool(ee->vbus_sense_alloc));
-	printf("	Load Virtual COM Port (VCP) Drivers = %s\n", print_bool(ee->load_vcp));
-	
+	printf("	External Oscillator Feedback Resistor Enabled = %s\n",
+           print_bool(ee->ext_osc_feedback_en));
+	printf("	CBUS pin allocated to VBUS Sense Mode = %s\n",
+           print_bool(ee->vbus_sense_alloc));
+	printf("	Load Virtual COM Port (VCP) Drivers = %s\n",
+           print_bool(ee->load_vcp));
+
 	/* USB VID/PID */
 	printf("	Vendor ID (VID) = 0x%04x\n", ee->usb_vid);
 	printf("	Product ID (PID) = 0x%04x\n", ee->usb_pid);
-	
+
 	/* USB Release Number */
-	printf("	USB Version = USB%d.%d\n", ee->usb_release_major, ee->usb_release_minor);	
-	
+	printf("	USB Version = USB%d.%d\n", ee->usb_release_major,
+           ee->usb_release_minor);
+
 	/* Max Power and Config */
-	printf("	Remote Wakeup by something other than USB = %s\n", print_bool(ee->remote_wakeup));
+	printf("	Remote Wakeup by something other than USB = %s\n",
+           print_bool(ee->remote_wakeup));
 	printf("	Self Powered = %s\n", print_bool(ee->self_powered));
-	printf("	Maximum Current Supported from USB = %dmA\n", 2 * ee->max_power); /* Units of 2mA */
-	
+    printf("	Maximum Current Supported from USB = %dmA\n",
+           2 * ee->max_power); /* units of 2mA */
+
 	/* Device and perhiperal control */
-	printf("	Pins Pulled Down on USB Suspend = %s\n", print_bool(ee->suspend_pull_down));
-	printf("	Indicate USB Serial Number Available = %s\n", print_bool(ee->serial_number_avail));
-	
+	printf("	Pins Pulled Down on USB Suspend = %s\n",
+           print_bool(ee->suspend_pull_down));
+	printf("	Indicate USB Serial Number Available = %s\n",
+           print_bool(ee->serial_number_avail));
+
 	printf(" FT1248\n");
 	printf("-------\n");
-	printf("	FT1248 Clock Polarity = %s\n", ee->ft1248_cpol ? "Active High":"Active Low");
-	printf("	FT1248 Bit Order = %s\n", ee->ft1248_bord ? "LSB to MSB":"MSB to LSB");
-	printf("	FT1248 Flow Control Enabled = %s\n",  print_bool(ee->ft1248_flow_control));
+	printf("	FT1248 Clock Polarity = %s\n",
+           ee->ft1248_cpol ? "Active High":"Active Low");
+	printf("	FT1248 Bit Order = %s\n",
+           ee->ft1248_bord ? "LSB to MSB":"MSB to LSB");
+	printf("	FT1248 Flow Control Enabled = %s\n",
+           print_bool(ee->ft1248_flow_control));
 
 	printf(" RS232\n");
 	printf("-------\n");
@@ -439,11 +454,12 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	Invert DSR = %s\n", print_bool(ee->invert_dsr));
 	printf("	Invert DCD = %s\n", print_bool(ee->invert_dcd));
 	printf("	Invert RI = %s\n", print_bool(ee->invert_ri));
-	
+
 	printf(" RS485\n");
 	printf("-------\n");
-	printf("	RS485 Echo Suppression Enabled = %s\n", print_bool(ee->rs485_echo_suppress));
-	
+	printf("	RS485 Echo Suppression Enabled = %s\n",
+           print_bool(ee->rs485_echo_suppress));
+
 	/* DBUS & CBUS Control */
 	printf("	DBUS Drive Strength = %dmA\n", 4 * (ee->dbus_drive_strength+1));
 	printf("	DBUS Slow Slew Mode = %u\n", ee->dbus_slow_slew);
@@ -451,18 +467,19 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("	CBUS Drive Strength = %dmA\n", 4 * (ee->cbus_drive_strength+1));
 	printf("	CBUS Slow Slew Mode = %u\n", ee->cbus_slow_slew);
 	printf("	CBUS Schmitt Trigger = %u\n", ee->cbus_schmitt);
-	
+
 	/* Manufacturer, Product and Serial Number string */
 	printf("	Manufacturer = %s\n", ee->manufacturer_string);
 	printf("	Product = %s\n", ee->product_string);
 	printf("	Serial Number = %s\n", ee->serial_string);
-	
+
 	/* I2C */
 	printf("  I2C\n");
 	printf("-------\n");
 	printf("	I2C Slave Address = %d \n", ee->i2c_slave_addr);
 	printf("	I2C Device ID = %d \n", ee->i2c_device_id);
-	printf("	I2C Schmitt Triggers Disabled = %s\n",  print_bool(ee->disable_i2c_schmitt));
+	printf("	I2C Schmitt Triggers Disabled = %s\n",
+           print_bool(ee->disable_i2c_schmitt));
 
 	/* CBUS */
 	printf("  CBUS\n");
@@ -485,18 +502,18 @@ static unsigned short calc_crc_ftx (void *addr)
 		crc ^= d8[i] | (d8[i+1] << 8);
 		crc  = (crc << 1) | (crc >> 15);
 	}
-	
+
 	/* Word Addresses 0x12 - 0x39 are ignored */
-	
+
 	/* Word Addresses 0x40 - 0x7E inclusive */
 	for (i = 0x40*2; i < 0x7F*2; i += 2) {
 		crc ^= d8[i] | (d8[i+1] << 8);
 		crc  = (crc << 1) | (crc >> 15);
 	}
-	
+
 	/* Word Address 0x7E is ignored */
 	/* Word Address 0x7F is the checksum */
-	
+
 	return crc;
 }
 static unsigned short verify_crc (void *addr, int len)
@@ -525,18 +542,21 @@ static unsigned short update_crc (void *addr, int len)
 /* ------------ EEPROM Encoding and Decoding ------------ */
 
 /**
- * Checks that the strings aren't too big to fit in the string descriptors memory.
+ * Checks that the strings aren't too big to fit in the string
+ * descriptors memory.
  */
 static int ee_check_strings(char* man, char* prod, char* ser)
 {
-	if (strlen(man) + strlen(prod) + strlen(ser) > 96)	return 1; /* If the strings are too long */
+  /* if the strings are too long */
+	if (strlen(man) + strlen(prod) + strlen(ser) > 96)	return 1;
 	return 0;
 }
 /**
  * Inserts a string into a buffer to be written out to the eeprom
  */
-static void ee_encode_string(char* str, unsigned char *ptr_field, unsigned char* len_field,
-			     unsigned char* eeprom, unsigned char* string_addr)
+static void ee_encode_string(char* str, unsigned char *ptr_field,
+                             unsigned char* len_field, unsigned char* eeprom,
+                             unsigned char* string_addr)
 {
   int original_length = strlen(str), length;
 
@@ -545,7 +565,7 @@ static void ee_encode_string(char* str, unsigned char *ptr_field, unsigned char*
   } else {
     length = strlen(str)*2 + 2;
     char* ftstr = malloc(length);
-    
+
     /* Encode a FT Prog compatible string */
     ftstr[0] = length;
     ftstr[1] = 3;
@@ -569,14 +589,16 @@ static void ee_encode_string(char* str, unsigned char *ptr_field, unsigned char*
   *string_addr += *len_field;
 }
 /**
- * Encodes an eeprom_fields object into a buffer ready to be written out to the eeprom
+ * Encodes an eeprom_fields object into a buffer ready to be written
+ * out to the eeprom.
  */
-static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
-{	
+static unsigned short ee_encode (unsigned char *eeprom, int len,
+                                 struct eeprom_fields *ee)
+{
 	int c; unsigned char string_desc_addr = 0xA0;
 
 	memset(eeprom, 0, len);
-	
+
 	/* Misc Config */
 	if (ee->bcd_enable)			eeprom[0x00] |= bcd_enable;
 	if (ee->force_power_enable)		eeprom[0x00] |= force_power_enable;
@@ -586,23 +608,23 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 	if (ee->ext_osc_feedback_en)		eeprom[0x00] |= ext_osc_feedback_en;
 	if (ee->vbus_sense_alloc)		eeprom[0x00] |= vbus_sense_alloc;
 	if (ee->load_vcp)			eeprom[0x00] |= load_vcp;
-	
+
 	/* USB VID/PID */
 	eeprom[0x02] = ee->usb_vid & 0xFF;
 	eeprom[0x03] = (ee->usb_vid >> 8) & 0xFF;
 	eeprom[0x04] = ee->usb_pid & 0xFF;
 	eeprom[0x05] = (ee->usb_pid >> 8) & 0xFF;
-	
+
 	/* USB Release Number */
 	eeprom[0x07] = ee->usb_release_major;
 	eeprom[0x06] = ee->usb_release_minor;
-	
+
 	/* Max Power and Config */
 	if (ee->remote_wakeup)			eeprom[0x08] |= remote_wakeup;
 	if (ee->self_powered)			eeprom[0x08] |= self_powered;
 	eeprom[0x08] |= 0x80;	/* This is a reserved bit! */
 	eeprom[0x09] = ee->max_power; /* Units of 2mA */
-	
+
 	/* Device and perhiperal control */
 	if (ee->suspend_pull_down)		eeprom[0x0A] |= suspend_pull_down;
 	if (ee->serial_number_avail)		eeprom[0x0A] |= serial_number_avail;
@@ -618,7 +640,7 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 	if (ee->invert_dsr)			eeprom[0x0B] |= invert_dsr;
 	if (ee->invert_dcd)			eeprom[0x0B] |= invert_dcd;
 	if (ee->invert_ri)			eeprom[0x0B] |= invert_ri;
-	
+
 	/* DBUS & CBUS Control */
 	eeprom[0x0C] |= (ee->dbus_drive_strength & dbus_drive_strength);
 	if (ee->dbus_slow_slew)			eeprom[0x0C] |= dbus_slow_slew;
@@ -626,48 +648,54 @@ static unsigned short ee_encode (unsigned char *eeprom, int len, struct eeprom_f
 	eeprom[0x0C] |= (ee->cbus_drive_strength & cbus_drive_strength) << 4;
 	if (ee->cbus_slow_slew)			eeprom[0x0C] |= cbus_slow_slew;
 	if (ee->cbus_schmitt)			eeprom[0x0C] |= cbus_schmitt;
-	
+
 	/* eeprom[0x0D] is unused */
-	
+
 	/* Manufacturer, Product and Serial Number string */
-	if (ee_check_strings(ee->manufacturer_string, ee->product_string, ee->serial_string)) {
-		fprintf(stderr, "Failed to encode, strings too long to fit in string memory area!\n");
+	if (ee_check_strings(ee->manufacturer_string, ee->product_string,
+                         ee->serial_string)) {
+		fprintf(stderr,
+                "Failed to encode, strings too long to fit in string memory area!\n");
 		exit(EINVAL);
 	}
-	ee_encode_string(ee->manufacturer_string, &eeprom[0x0E], &eeprom[0x0F], eeprom, &string_desc_addr);
-	ee_encode_string(ee->product_string, &eeprom[0x10], &eeprom[0x11], eeprom, &string_desc_addr);
-	ee_encode_string(ee->serial_string, &eeprom[0x12], &eeprom[0x13], eeprom, &string_desc_addr);
-	
+	ee_encode_string(ee->manufacturer_string, &eeprom[0x0E], &eeprom[0x0F],
+                     eeprom, &string_desc_addr);
+	ee_encode_string(ee->product_string, &eeprom[0x10], &eeprom[0x11],
+                     eeprom, &string_desc_addr);
+	ee_encode_string(ee->serial_string, &eeprom[0x12], &eeprom[0x13],
+                     eeprom, &string_desc_addr);
+
 	/* I2C */
 	eeprom[0x14] = ee->i2c_slave_addr & 0xFF;
 	eeprom[0x15] = (ee->i2c_slave_addr >> 8) & 0xFF;
 	eeprom[0x16] = ee->i2c_device_id & 0xFF;
 	eeprom[0x17] = (ee->i2c_device_id >> 8) & 0xFF;
 	eeprom[0x18] = (ee->i2c_device_id >> 16) & 0xFF;
-	
+
 	/* CBUS */
 	for (c = 0; c < CBUS_COUNT; c++) {
-		eeprom[0x1A + c] = ee->cbus[c];	
+		eeprom[0x1A + c] = ee->cbus[c];
 	}
-	
+
 	/* User Memory Space */
 	memcpy(&eeprom[0x24], ee->user_mem, 92);
 	/* Factory Configuration Values */
 	memcpy(&eeprom[0x80], ee->factory_config, 32);
-	
+
 	return update_crc(eeprom, len);
 }
 /**
  * Extracts a string from the a buffer read from eeprom
  */
-static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigned char len)
+static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr,
+                              unsigned char len)
 {
 	char* str = malloc(len+1);
-	
+
 	if (str != NULL) {
 		/* Copy the string from the EEPROM memory */
 		memcpy(str, ptr, len);
-		
+
 		/* Decode strings written by FT Prog correctly */
 		if (use_8b_strings) {
 		  str[len] = '\0';
@@ -682,7 +710,7 @@ static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigne
 		  str[out] = '\0';
 		}
 	}
-	
+
 	return str;
 }
 /*
@@ -691,7 +719,7 @@ static char* ee_decode_string(unsigned char *eeprom, unsigned char* ptr, unsigne
 static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 {
 	int c;
-	
+
 	/* Misc Config */
 	ee->bcd_enable = (eeprom[0x00] & bcd_enable);
 	ee->force_power_enable = (eeprom[0x00] & force_power_enable);
@@ -701,20 +729,20 @@ static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 	ee->ext_osc_feedback_en = (eeprom[0x00] & ext_osc_feedback_en);
 	ee->vbus_sense_alloc = (eeprom[0x00] & vbus_sense_alloc);
 	ee->load_vcp = (eeprom[0x00] & load_vcp);
-	
+
 	/* USB VID/PID */
 	ee->usb_vid = eeprom[0x02] | (eeprom[0x03] << 8);
 	ee->usb_pid = eeprom[0x04] | (eeprom[0x05] << 8);
-	
+
 	/* USB Release Number */
 	ee->usb_release_major = eeprom[0x07];
 	ee->usb_release_minor = eeprom[0x06];
-	
+
 	/* Max Power and Config */
 	ee->remote_wakeup = (eeprom[0x08] & remote_wakeup);
 	ee->self_powered = (eeprom[0x08] & self_powered);
 	ee->max_power = eeprom[0x09]; /* Units of 2mA */
-	
+
 	/* Device and perhiperal control */
 	ee->suspend_pull_down = (eeprom[0x0A] & suspend_pull_down);
 	ee->serial_number_avail = (eeprom[0x0A] & serial_number_avail);
@@ -730,7 +758,7 @@ static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 	ee->invert_dsr = (eeprom[0x0B] & invert_dsr);
 	ee->invert_dcd = (eeprom[0x0B] & invert_dcd);
 	ee->invert_ri = (eeprom[0x0B] & invert_ri);
-	
+
 	/* DBUS & CBUS Control */
 	ee->dbus_drive_strength = (eeprom[0x0C] & dbus_drive_strength);
 	ee->dbus_slow_slew = (eeprom[0x0C] & dbus_slow_slew);
@@ -738,23 +766,26 @@ static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 	ee->cbus_drive_strength = (eeprom[0x0C] & cbus_drive_strength) >> 4;
 	ee->cbus_slow_slew = (eeprom[0x0C] & cbus_slow_slew);
 	ee->cbus_schmitt = (eeprom[0x0C] & cbus_schmitt);
-	
+
 	/* eeprom[0x0D] is unused */
-	
+
 	/* Manufacturer, Product and Serial Number string */
-	ee->manufacturer_string = ee_decode_string(eeprom, eeprom+eeprom[0x0E], eeprom[0x0F]);
-	ee->product_string = ee_decode_string(eeprom, eeprom+eeprom[0x10], eeprom[0x11]);
-	ee->serial_string = ee_decode_string(eeprom, eeprom+eeprom[0x12], eeprom[0x13]);
-	
+	ee->manufacturer_string = ee_decode_string(eeprom,
+                                               eeprom+eeprom[0x0E], eeprom[0x0F]);
+	ee->product_string = ee_decode_string(eeprom,
+                                          eeprom+eeprom[0x10], eeprom[0x11]);
+	ee->serial_string = ee_decode_string(eeprom,
+                                         eeprom+eeprom[0x12], eeprom[0x13]);
+
 	/* I2C */
 	ee->i2c_slave_addr = eeprom[0x14] | (eeprom[0x15] << 8);
 	ee->i2c_device_id = eeprom[0x16] | (eeprom[0x17] << 8) | (eeprom[0x18] << 16);
-	
+
 	/* CBUS */
 	for (c = 0; c < CBUS_COUNT; c++) {
-		ee->cbus[c] = eeprom[0x1A + c];	
+		ee->cbus[c] = eeprom[0x1A + c];
 	}
-	
+
 	/* User Memory Space */
 	memcpy(ee->user_mem, &eeprom[0x24], 92);
 	/* Factory Configuration Values */
@@ -765,13 +796,14 @@ static void ee_decode (unsigned char *eeprom, int len, struct eeprom_fields *ee)
 
 static const char *myname;
 
-/*
- * Prints a human-readable expression showing all the possibilities for an option
+/**
+ * Prints a human-readable expression showing all the possibilities
+ * for an option.
  */
 static void print_options(FILE *fp, const char** options)
 {
 	int j;
-	
+
 	fprintf(fp, "  [");
 	for (j = 0; options[j];) {
 		fprintf(fp, "%s", options[j]);
@@ -795,7 +827,7 @@ static void show_help (FILE *fp)
 		const char *val = arg_type_help[i];
 		/* Print its name */
 		fprintf(fp, "    %s", arg_type_strings[i]);
-		
+
 		if (val) { /* If there is a help string */
 			if (strcmp(val, "[cbus]") == 0) {
 				fprintf(fp, "  [1..%d]", CBUS_COUNT);
@@ -822,7 +854,7 @@ static int ee_prepare_write(void)
 	if ((ret = ftdi_usb_reset(&ftdi)) != 0)						return ret;
 	if ((ret = ftdi_poll_modem_status(&ftdi, &status)) != 0)		return ret;
 	if ((ret = ftdi_set_latency_timer(&ftdi, 0x77)) != 0)		return ret;
-	
+
 	return 0;
 }
 static int ee_write(unsigned char *eeprom, int len)
@@ -830,13 +862,16 @@ static int ee_write(unsigned char *eeprom, int len)
 	int i;
 
 	if (ee_prepare_write()) {
-		fprintf(stderr, "ee_prepare_write() failed: %s\n", ftdi_get_error_string(&ftdi));
+		fprintf(stderr, "ee_prepare_write() failed: %s\n",
+                ftdi_get_error_string(&ftdi));
 		exit(EIO);
 	}
-		
+
 	for (i = 0; i < len/2; i++) {
-		if (ftdi_write_eeprom_location(&ftdi, i, eeprom[i*2] | (eeprom[(i*2)+1] << 8))) {
-			fprintf(stderr, "ftdi_write_eeprom_location() failed: %s\n", ftdi_get_error_string(&ftdi));
+		if (ftdi_write_eeprom_location(&ftdi, i,
+                                       eeprom[i*2] | (eeprom[(i*2)+1] << 8))) {
+			fprintf(stderr, "ftdi_write_eeprom_location() failed: %s\n",
+                    ftdi_get_error_string(&ftdi));
 			exit(EIO);
 		}
 	}
@@ -850,11 +885,12 @@ static unsigned short ee_read_and_verify (void *eeprom, int len)
 
 	for (i = 0; i < len/2; i++) {
 		if (ftdi_read_eeprom_location(&ftdi, i, eeprom+(i*2))) {
-			fprintf(stderr, "ftdi_read_eeprom_location() failed: %s\n", ftdi_get_error_string(&ftdi));
+			fprintf(stderr, "ftdi_read_eeprom_location() failed: %s\n",
+                    ftdi_get_error_string(&ftdi));
 			exit(EIO);
 		}
 	}
-	
+
 	return verify_crc(eeprom, len);
 }
 
@@ -893,106 +929,107 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
     arg = match_arg(argv[i++], arg_type_strings);
     switch (arg) {
       case arg_help:
-	show_help(stdout);
-	exit(1);
+        show_help(stdout);
+        exit(1);
       case arg_dump:
-	break;
+        break;
       case arg_verbose:
-	verbose = 1;
-	break;
-	/* File operations */
+        verbose = 1;
+        break;
+        /* File operations */
       case arg_save:
-	save_path = argv[i++];
-	break;
+        save_path = argv[i++];
+        break;
       case arg_restore:
-	restore_path = argv[i++];
-	break;
+        restore_path = argv[i++];
+        break;
       case arg_8b_strings:
-	use_8b_strings = true;
-	break;
+        use_8b_strings = true;
+        break;
       case arg_cbus:
-	c = match_arg(argv[i++], cbus_strings);
-	ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
-	break;
+        c = match_arg(argv[i++], cbus_strings);
+        ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
+        break;
       case arg_invert:
-	switch(match_arg(argv[i++], rs232_strings)) {
-	  case 0:	ee->invert_txd = !ee->invert_txd; break;
-	  case 1:	ee->invert_rxd = !ee->invert_rxd; break;
-	  case 2:	ee->invert_rts = !ee->invert_rts; break;
-	  case 3:	ee->invert_cts = !ee->invert_cts; break;
-	  case 4:	ee->invert_dtr = !ee->invert_dtr; break;
-	  case 5:	ee->invert_dsr = !ee->invert_dsr; break;
-	  case 6:	ee->invert_dcd = !ee->invert_dcd; break;
-	  case 7:	ee->invert_ri = !ee->invert_ri; break;
-	}
-	break;
-	/* Strings */
+        switch(match_arg(argv[i++], rs232_strings)) {
+          case 0:	ee->invert_txd = !ee->invert_txd; break;
+          case 1:	ee->invert_rxd = !ee->invert_rxd; break;
+          case 2:	ee->invert_rts = !ee->invert_rts; break;
+          case 3:	ee->invert_cts = !ee->invert_cts; break;
+          case 4:	ee->invert_dtr = !ee->invert_dtr; break;
+          case 5:	ee->invert_dsr = !ee->invert_dsr; break;
+          case 6:	ee->invert_dcd = !ee->invert_dcd; break;
+          case 7:	ee->invert_ri = !ee->invert_ri; break;
+        }
+        break;
+        /* Strings */
       case arg_manufacturer:
-	ee->manufacturer_string = argv[i++];
-	break;
+        ee->manufacturer_string = argv[i++];
+        break;
       case arg_product:
-	ee->product_string = argv[i++];
-	break;
+        ee->product_string = argv[i++];
+        break;
       case arg_new_serno:
-	ee->serial_string = argv[i++];
-	ee->serial_number_avail = strlen(ee->serial_string) > 0;
-	break;
-	
+        ee->serial_string = argv[i++];
+        ee->serial_number_avail = strlen(ee->serial_string) > 0;
+        break;
+
       case arg_max_bus_power:
-	ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
-	break;
+        ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
+        break;
       case arg_self_powered:
         ee->self_powered = match_arg(argv[i++], bool_strings) & 1;
         break;
       case arg_suspend_pull_down:
-	ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
-	break;
+        ee->suspend_pull_down = match_arg(argv[i++], bool_strings) & 1;
+        break;
       case arg_load_vcp:
-	ee->load_vcp = match_arg(argv[i++], bool_strings) & 1;
-	break;
+        ee->load_vcp = match_arg(argv[i++], bool_strings) & 1;
+        break;
       case arg_remote_wakeup:
-	ee->remote_wakeup = match_arg(argv[i++], bool_strings) & 1;
-	break;
-	/* FT1248 */
+        ee->remote_wakeup = match_arg(argv[i++], bool_strings) & 1;
+        break;
+        /* FT1248 */
       case arg_ft1248_cpol:
-	ee->ft1248_cpol = match_arg(argv[i++], bool_strings) & 1;
-	break;
+        ee->ft1248_cpol = match_arg(argv[i++], bool_strings) & 1;
+        break;
       case arg_ft1248_bord:
-	ee->ft1248_bord = match_arg(argv[i++], bool_strings) & 1;
-	break;
+        ee->ft1248_bord = match_arg(argv[i++], bool_strings) & 1;
+        break;
       case arg_ft1248_flow_control:
-	ee->ft1248_flow_control = match_arg(argv[i++], bool_strings) & 1;
-	break;
-      case arg_i2c_schmitt: /* The command line arg is enabled +ve, the eeprom is disabled +ve */
-	ee->disable_i2c_schmitt = !(match_arg(argv[i++], bool_strings) & 1);
-	break;
-	/* I2C */
+        ee->ft1248_flow_control = match_arg(argv[i++], bool_strings) & 1;
+        break;
+      case arg_i2c_schmitt:
+        /* The command line arg is enabled +ve, the eeprom is disabled +ve */
+        ee->disable_i2c_schmitt = !(match_arg(argv[i++], bool_strings) & 1);
+        break;
+        /* I2C */
       case arg_i2c_slave_address:
-	ee->i2c_slave_addr = unsigned_val(argv[i++], 0xffff);
-	break;
+        ee->i2c_slave_addr = unsigned_val(argv[i++], 0xffff);
+        break;
       case arg_i2c_device_id:
-	ee->i2c_device_id = unsigned_val(argv[i++], 0xffff);
-	break;
-	/* RS485 */
+        ee->i2c_device_id = unsigned_val(argv[i++], 0xffff);
+        break;
+        /* RS485 */
       case arg_rs485_echo_suppression:
-	ee->rs485_echo_suppress = match_arg(argv[i++], bool_strings) & 1;
-	break;
-	/* VID, PID, Ser No. */
+        ee->rs485_echo_suppress = match_arg(argv[i++], bool_strings) & 1;
+        break;
+        /* VID, PID, Ser No. */
       case arg_old_vid:
-	ee->old_vid = unsigned_val(argv[i++], 0xffff);
-	break;
+        ee->old_vid = unsigned_val(argv[i++], 0xffff);
+        break;
       case arg_old_pid:
-	ee->old_pid = unsigned_val(argv[i++], 0xffff);
-	break;
+        ee->old_pid = unsigned_val(argv[i++], 0xffff);
+        break;
       case arg_old_serno:
-	ee->old_serno = argv[i++];
-	break;
+        ee->old_serno = argv[i++];
+        break;
       case arg_new_vid:
-	ee->usb_vid = unsigned_val(argv[i++], 0xffff);
-	break;
+        ee->usb_vid = unsigned_val(argv[i++], 0xffff);
+        break;
       case arg_new_pid:
-	ee->usb_pid = unsigned_val(argv[i++], 0xffff);
-	break;
+        ee->usb_pid = unsigned_val(argv[i++], 0xffff);
+        break;
     }
   }
 }
@@ -1022,7 +1059,8 @@ static void save_eeprom_to_file (const char *path, void *eeprom, int len)
 	printf("%s: wrote %d bytes\n", path, count);
 }
 
-static void restore_eeprom_from_file (const char *path, void *eeprom, int len, int max)
+static void restore_eeprom_from_file (const char *path, void *eeprom, int len,
+                                      int max)
 {
 	int count, fd = open(path, O_RDONLY);
 
@@ -1054,13 +1092,14 @@ int main (int argc, char *argv[])
 	unsigned char old[0x100] = {0,}, new[0x100] = {0,};
 	unsigned short new_crc;
 	struct eeprom_fields ee;
-	unsigned int len = 0x100; /* We only deal with the first 256 bytes and ignore the user memory space */
+    /* We only deal with the first 256 bytes and ignore the user memory space */
+	unsigned int len = 0x100;
 
 	myname = argv[0];
 	slash = strrchr(myname, '/');
 	if (slash)
 		myname = slash + 1;
-	
+
 	printf("\n%s: version %s\n", myname, MYVERSION);
 	printf("Modified for the FT-X series by Richard Meadows\n\n");
 	printf("Based upon:\n");
@@ -1080,11 +1119,12 @@ int main (int argc, char *argv[])
 
 	if (ftdi_usb_open_desc(&ftdi, ee.old_vid, ee.old_pid, NULL, ee.old_serno)) {
 		fprintf(stderr, "ftdi_usb_open() failed for %04x:%04x:%s %s\n",
-			ee.old_vid, ee.old_pid, ee.old_serno ? ee.old_serno : "", ftdi_get_error_string(&ftdi));
+                ee.old_vid, ee.old_pid,
+                ee.old_serno ? ee.old_serno : "", ftdi_get_error_string(&ftdi));
 		exit(ENODEV);
 	}
 	atexit(&do_close);
-	
+
 	/* First, read the original eeprom from the device */
 	(void) ee_read_and_verify(old, len);
 	if (verbose) dumpmem("existing eeprom", old, len);
@@ -1098,12 +1138,12 @@ int main (int argc, char *argv[])
 		restore_eeprom_from_file(restore_path, new, len, sizeof(new));
 		if (verbose) dumpmem(restore_path, new, len);
 	}
-	
+
 	/* TODO: It'd be nice to check we can restore the EEPROM.. */
-	
+
 	/* Decode eeprom contents into ee struct */
 	ee_decode(old, len, &ee);
-	
+
 	/* process args, and dump new settings */
 	process_args(argc, argv, &ee);	/* Handle value-change args */
 	ee_dump(&ee);
@@ -1116,17 +1156,18 @@ int main (int argc, char *argv[])
 		printf("No change from existing eeprom contents.\n");
 	} else {
 		if (verbose) dumpmem("new eeprom", new, len);
-		
+
 		printf("Rewriting eeprom with new contents.\n");
 		ee_write(new, len);
-		
+
 		/* Read it back again, and check for differences */
 		if (ee_read_and_verify(new, len) != new_crc) {
 			fprintf(stderr, "Readback test failed, results may be botched\n");
 			exit(EINVAL);
 		}
-		ftdi_usb_reset(&ftdi);  /* Reset the device to force it to load the new settings */
+        /* Reset the device to force it to load the new settings */
+		ftdi_usb_reset(&ftdi);
 	}
-	
+
 	return 0;
 }
