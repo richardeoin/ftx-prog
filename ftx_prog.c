@@ -140,6 +140,47 @@ enum arg_type {
 	arg_self_powered,
 };
 
+struct args_required_t
+{
+    enum arg_type t;
+    int number;
+};
+
+const struct args_required_t req_info[] =
+{
+    {arg_help, 0},
+    {arg_dump, 0},
+    {arg_verbose, 0},
+    {arg_save, 1},
+    {arg_restore, 1},
+    {arg_8b_strings, 0},
+    {arg_cbus, 2},
+    {arg_manufacturer, 1},
+    {arg_product, 1},
+    {arg_old_serno, 1},
+    {arg_new_serno, 1},
+    {arg_max_bus_power, 1},
+    {arg_suspend_pull_down, 1},
+    {arg_load_vcp, 1},
+    {arg_remote_wakeup, 1},
+    {arg_ft1248_cpol, 1},
+    {arg_ft1248_bord, 1},
+    {arg_ft1248_flow_control, 1},
+    {arg_i2c_schmitt, 1},
+    {arg_i2c_slave_address, 1},
+    {arg_i2c_device_id, 1},
+    {arg_rs485_echo_suppression, 1},
+
+    {arg_old_vid, 1},
+    {arg_old_pid, 1},
+    {arg_new_vid, 1},
+    {arg_new_pid, 1},
+    {arg_invert, 1},
+    {arg_self_powered, 1}
+};
+
+
+
 /* ------------ Strings for argument parsing ------------ */
 
 static const char* arg_type_strings[] = {
@@ -920,13 +961,30 @@ static unsigned long unsigned_val (const char *arg, unsigned long max)
 	}
 	return val;
 }
-static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
+static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
 {
   int i; int c;
+  int j;
 
   for (i = 1; i < argc;) {
     int arg;
     arg = match_arg(argv[i++], arg_type_strings);
+
+    /* detect missing arguments and handle errors */
+    int expected_args = 0;
+    for (j = 0; j < (sizeof(req_info) / sizeof(req_info[0])); j++) {
+    	if (req_info[j].t == arg) expected_args = req_info[j].number;
+    }
+
+    int remaining_args = (argc - i);
+    if (remaining_args < expected_args) {
+        fprintf(stderr, "Missing arguments to %s.  "
+                "Expected %i but only %i args remain\n",
+                argv[i - 1], expected_args, remaining_args);
+        fprintf(stderr, "type %s --help for more information\n", argv[0]);
+        return -1;
+    }
+
     switch (arg) {
       case arg_help:
         show_help(stdout);
@@ -973,7 +1031,6 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
         ee->serial_string = argv[i++];
         ee->serial_number_avail = strlen(ee->serial_string) > 0;
         break;
-
       case arg_max_bus_power:
         ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
         break;
@@ -1032,6 +1089,8 @@ static void process_args (int argc, char *argv[], struct eeprom_fields *ee)
         break;
     }
   }
+
+  return 0;
 }
 
 /* ------------ File Save / Restore ------------ */
@@ -1115,7 +1174,9 @@ int main (int argc, char *argv[])
 	memset(&ee, 0, sizeof(ee));
 	ee.old_vid = 0x0403;	/* default; override with --old_vid arg */
 	ee.old_pid = 0x6015;	/* default; override with --old_pid arg */
-	process_args(argc, argv, &ee);	/* handle --help and --old-* args */
+	if (process_args(argc, argv, &ee)) { /* handle --help and --old-* args */
+    	return -1;
+    }
 
 	if (ftdi_usb_open_desc(&ftdi, ee.old_vid, ee.old_pid, NULL, ee.old_serno)) {
 		fprintf(stderr, "ftdi_usb_open() failed for %04x:%04x:%s %s\n",
