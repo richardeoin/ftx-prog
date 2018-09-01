@@ -32,12 +32,14 @@
 #include <ftdi.h>
 #include <stdbool.h>
 
-#define MYVERSION	"0.1"
+#define MYVERSION	"0.2"
 
 #define CBUS_COUNT	7
 
 static struct ftdi_context ftdi;
 static int verbose = 0;
+static int erase_eeprom = 0;
+static int ignore_crc_error = 0;
 static bool use_8b_strings = false;
 static const char *save_path = NULL, *restore_path = NULL;
 
@@ -138,6 +140,8 @@ enum arg_type {
 	arg_new_pid,
 	arg_invert,
 	arg_self_powered,
+	arg_ignore_crc_error,
+	arg_erase_eeprom
 };
 
 struct args_required_t
@@ -176,7 +180,9 @@ const struct args_required_t req_info[] =
     {arg_new_vid, 1},
     {arg_new_pid, 1},
     {arg_invert, 1},
-    {arg_self_powered, 1}
+    {arg_self_powered, 1},
+    {arg_ignore_crc_error, 0},
+    {arg_erase_eeprom, 0}
 };
 
 
@@ -212,6 +218,8 @@ static const char* arg_type_strings[] = {
 	"--new-pid",
 	"--invert",
 	"--self-powered",
+	"--ignore-crc-error",
+	"--erase-eeprom",
 	NULL
 };
 static const char* rs232_strings[] = {
@@ -290,6 +298,8 @@ static const char *arg_type_help[] = {
 	"			 <number>   # (new/custom product id be programmed)",
 	"[invert]",
 	"		 [on|off]   # (specify if chip is bus-powered or self-powered)",
+	"   				    # Ignore CRC errors and continue ",
+	"   				    # Erase the EEPROM and exit",
 
 };
 
@@ -565,9 +575,13 @@ static unsigned short verify_crc (void *addr, int len)
 
 	if (crc != actual) {
 		fprintf(stderr, "Bad CRC: crc=0x%04x, actual=0x%04x\n", crc, actual);
-		exit(EINVAL);
+		if (ignore_crc_error == 0) {
+			exit(EINVAL);
+		} else {
+			fprintf(stderr, "Ignoring CRC error\n");
+		}
 	}
-	if (verbose) printf("CRC: Okay (0x%04x)\n", crc);
+	if (verbose) { printf("CRC: Okay (0x%04x)\n", crc); }
 	return crc;
 }
 static unsigned short update_crc (void *addr, int len)
@@ -892,9 +906,9 @@ static int ee_prepare_write(void)
 	int ret;
 
 	/* These commands were traced while running MProg */
-	if ((ret = ftdi_usb_reset(&ftdi)) != 0)						return ret;
-	if ((ret = ftdi_poll_modem_status(&ftdi, &status)) != 0)		return ret;
-	if ((ret = ftdi_set_latency_timer(&ftdi, 0x77)) != 0)		return ret;
+	if ((ret = ftdi_usb_reset(&ftdi)) != 0) { return ret; }
+	if ((ret = ftdi_poll_modem_status(&ftdi, &status)) != 0) { return ret; }
+	if ((ret = ftdi_set_latency_timer(&ftdi, 0x77)) != 0) { return ret; }
 
 	return 0;
 }
@@ -961,6 +975,9 @@ static unsigned long unsigned_val (const char *arg, unsigned long max)
 	}
 	return val;
 }
+
+
+
 static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
 {
   int i; int c;
@@ -990,6 +1007,12 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
         show_help(stdout);
         exit(1);
       case arg_dump:
+        break;
+      case arg_ignore_crc_error:
+        ignore_crc_error = 1;
+        break;
+      case arg_erase_eeprom:
+        erase_eeprom = 1;
         break;
       case arg_verbose:
         verbose = 1;
@@ -1210,23 +1233,35 @@ int main (int argc, char *argv[])
 	ee_dump(&ee);
 
 	/* Build new eeprom image */
-	new_crc = ee_encode(new, len, &ee);
+	if (erase_eeprom == 0) {
+		new_crc = ee_encode(new, len, &ee);
+	}  else {
+		memset(new, 0xff, 0x100);
+		new_crc = 0xFFFF;
+	}
 
 	/* If different from original, then write it back to the device */
 	if (0 == memcmp(old, new, len)) {
 		printf("No change from existing eeprom contents.\n");
 	} else {
-		if (verbose) dumpmem("new eeprom", new, len);
+		if (verbose) { dumpmem("new eeprom", new, len); }
 
-		printf("Rewriting eeprom with new contents.\n");
+		if (erase_eeprom == 0) {
+			printf("Rewriting eeprom with new contents.\n");
+		} else {
+			printf("Erasing EEPROM\n");
+		}
+
 		ee_write(new, len);
 
 		/* Read it back again, and check for differences */
-		if (ee_read_and_verify(new, len) != new_crc) {
-			fprintf(stderr, "Readback test failed, results may be botched\n");
+		if (ee_read_and_verify(new, len) != new_crc ) {
+   			fprintf(stderr, "Readback test failed, results may be botched\n");
 			exit(EINVAL);
-		}
-        /* Reset the device to force it to load the new settings */
+	  	}
+		if (erase_eeprom == 1) { printf("Erase done\n"); }
+
+		/* Reset the device to force it to load the new settings */
 		ftdi_usb_reset(&ftdi);
 	}
 
