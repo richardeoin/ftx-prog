@@ -1022,6 +1022,7 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
         save_path = argv[i++];
         break;
       case arg_restore:
+        ignore_crc_error = 1;
         restore_path = argv[i++];
         break;
       case arg_8b_strings:
