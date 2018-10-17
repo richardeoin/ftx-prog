@@ -1217,27 +1217,31 @@ int main (int argc, char *argv[])
 	if (save_path)
 		save_eeprom_to_file(save_path, old, len);
 
+    /* TODO: It'd be nice to check we can restore the EEPROM.. */
+
+    /* Decode eeprom contents into ee struct */
+    ee_decode(old, len, &ee);
+
 	/* Restore contents from a file, if requested (--restore) */
 	if (restore_path) {
 		restore_eeprom_from_file(restore_path, new, len, sizeof(new));
 		if (verbose) dumpmem(restore_path, new, len);
-	}
 
-	/* TODO: It'd be nice to check we can restore the EEPROM.. */
+		/* factory configuration */
+		memcpy(&new[0x80], &old[0x80], 32);
+		new_crc = update_crc(new, len);
+	} else {
+	    /* process args, and dump new settings */
+		process_args(argc, argv, &ee);	/* Handle value-change args */
+		ee_dump(&ee);
 
-	/* Decode eeprom contents into ee struct */
-	ee_decode(old, len, &ee);
-
-	/* process args, and dump new settings */
-	process_args(argc, argv, &ee);	/* Handle value-change args */
-	ee_dump(&ee);
-
-	/* Build new eeprom image */
-	if (erase_eeprom == 0) {
-		new_crc = ee_encode(new, len, &ee);
-	}  else {
-		memset(new, 0xff, 0x100);
-		new_crc = 0xFFFF;
+		/* Build new eeprom image */
+		if (erase_eeprom == 0) {
+			new_crc = ee_encode(new, len, &ee);
+		}  else {
+			memset(new, 0xff, 0x100);
+			new_crc = 0xFFFF;
+		}
 	}
 
 	/* If different from original, then write it back to the device */
