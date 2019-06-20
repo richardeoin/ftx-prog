@@ -123,6 +123,8 @@ enum arg_type {
 	arg_old_serno,
 	arg_new_serno,
 	arg_max_bus_power,
+	arg_dbus_drive_strength,
+	arg_cbus_drive_strength,
 	arg_suspend_pull_down,
 	arg_load_vcp,
 	arg_remote_wakeup,
@@ -164,6 +166,8 @@ const struct args_required_t req_info[] =
     {arg_old_serno, 1},
     {arg_new_serno, 1},
     {arg_max_bus_power, 1},
+    {arg_dbus_drive_strength, 1},
+    {arg_cbus_drive_strength, 1},
     {arg_suspend_pull_down, 1},
     {arg_load_vcp, 1},
     {arg_remote_wakeup, 1},
@@ -202,6 +206,8 @@ static const char* arg_type_strings[] = {
 	"--old-serial-number",
 	"--new-serial-number",
 	"--max-bus-power",
+	"--dbus-drive-current",
+	"--cbus-drive-current",
 	"--suspend-pull-down",
 	"--load-vcp",
 	"--remote-wakeup",
@@ -282,6 +288,8 @@ static const char *arg_type_help[] = {
 	"	 <string>   # (current serial number of device to be reprogrammed)",
 	"	 <string>   # (new USB serial number string)",
 	"		 <number>   # (max bus current in milli-amperes)",
+	"		 <number>   # (max dbus current in milli-amperes)",
+	"		 <number>   # (max cbus current in milli-amperes)",
 	"	 [on|off]   # (force I/O pins into logic low state on suspend)",
 	"		 [on|off]   # (controls if the VCP drivers are loaded)",
 	"		 [on|off]   # (allows the interface to be woken up by something other than USB)",
@@ -324,6 +332,16 @@ static const char *bool_strings[] = {
 	"high",
 	"msb",
 	"lsb",
+};
+
+static const char *speed_strings[] = {
+    "slow",
+    "fast"
+};
+
+static const char *schmitt_strings[] = {
+    "normal",
+    "schmitt"
 };
 
 struct eeprom_fields {
@@ -513,11 +531,11 @@ static void ee_dump (struct eeprom_fields *ee)
 
 	/* DBUS & CBUS Control */
 	printf("	DBUS Drive Strength = %dmA\n", 4 * (ee->dbus_drive_strength+1));
-	printf("	DBUS Slow Slew Mode = %u\n", ee->dbus_slow_slew);
-	printf("	DBUS Schmitt Trigger = %u\n", ee->dbus_schmitt);
+	printf("	DBUS Slew Mode = %s\n", speed_strings[ee->dbus_slow_slew]);
+	printf("	DBUS Schmitt Trigger = %s\n", schmitt_strings[ee->dbus_schmitt]);
 	printf("	CBUS Drive Strength = %dmA\n", 4 * (ee->cbus_drive_strength+1));
-	printf("	CBUS Slow Slew Mode = %u\n", ee->cbus_slow_slew);
-	printf("	CBUS Schmitt Trigger = %u\n", ee->cbus_schmitt);
+	printf("	CBUS Slew Mode = %s\n", speed_strings[ee->cbus_slow_slew]);
+	printf("	CBUS Schmitt Trigger = %s\n", schmitt_strings[ee->cbus_schmitt]);
 
 	/* Manufacturer, Product and Serial Number string */
 	printf("	Manufacturer = %s\n", ee->manufacturer_string);
@@ -980,9 +998,11 @@ static unsigned long unsigned_val (const char *arg, unsigned long max)
 
 static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
 {
-  int i; int c;
+  int i; int c; int m;
   int j;
 
+  bool bcd_charge_changed = false;
+  bool vbus_sense_changed = false;
   for (i = 1; i < argc;) {
     int arg;
     arg = match_arg(argv[i++], arg_type_strings);
@@ -1029,7 +1049,19 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
         break;
       case arg_cbus:
         c = match_arg(argv[i++], cbus_strings);
-        ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
+        m = match_arg(argv[i++], cbus_mode_strings);
+
+        if ((ee->cbus[c] == cbus_vbus_sense)
+            || (m == cbus_vbus_sense))
+          vbus_sense_changed = true;
+
+        if ((ee->cbus[c] == cbus_bcd_det)
+            || (ee->cbus[c] == cbus_bcd_det_i)
+            || (m == cbus_bcd_det)
+            || (m == cbus_bcd_det_i))
+          bcd_charge_changed = true;
+
+        ee->cbus[c] = m;
         break;
       case arg_invert:
         switch(match_arg(argv[i++], rs232_strings)) {
@@ -1056,6 +1088,12 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
         break;
       case arg_max_bus_power:
         ee->max_power = unsigned_val(argv[i++], 0x1ff) / 2;
+        break;
+      case arg_dbus_drive_strength:
+        ee->dbus_drive_strength = (unsigned_val(argv[i++], 16) / 4) - 1;
+        break;
+      case arg_cbus_drive_strength:
+        ee->cbus_drive_strength = (unsigned_val(argv[i++], 16) / 4) - 1;
         break;
       case arg_self_powered:
         ee->self_powered = match_arg(argv[i++], bool_strings) & 1;
@@ -1111,6 +1149,37 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
         ee->usb_pid = unsigned_val(argv[i++], 0xffff);
         break;
     }
+  }
+
+  if (bcd_charge_changed)
+  {
+    bool bcd = false;
+    for (i = 0; i < CBUS_COUNT; i++)
+    {
+      if ((ee->cbus[i] == cbus_bcd_det)
+          || (ee->cbus[i] == cbus_bcd_det_i))
+      {
+        bcd = true;
+        break;
+      }
+    }
+
+    ee->bcd_enable = bcd;
+  }
+
+  if (vbus_sense_changed)
+  {
+    bool vsa = false;
+    for (i = 0; i < CBUS_COUNT; i++)
+    {
+      if (ee->cbus[i] == cbus_vbus_sense)
+      {
+        vsa = true;
+        break;
+      }
+    }
+
+    ee->vbus_sense_alloc = vsa;
   }
 
   return 0;
