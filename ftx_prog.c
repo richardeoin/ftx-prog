@@ -536,9 +536,12 @@ static void ee_dump (struct eeprom_fields *ee)
 	printf("  CBUS\n");
 	printf("-------\n");
 	for (c = 0; c < CBUS_COUNT; ++c) {
-		printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
+            if (ee->cbus[c] < _cbus_mode_end)
+                    printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
+            else
+                    printf("	CBUS%u = %d\n", c, ee->cbus[c]);
 	}
-};
+}
 
 /* ------------ Cyclic Redundancy Check ------------ */
 
