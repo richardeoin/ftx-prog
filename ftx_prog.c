@@ -39,6 +39,7 @@
 static struct ftdi_context ftdi;
 static int verbose = 0;
 static int erase_eeprom = 0;
+static int dump = 0;
 static int ignore_crc_error = 0;
 static bool use_8b_strings = false;
 static const char *save_path = NULL, *restore_path = NULL;
@@ -68,6 +69,7 @@ enum cbus_mode {
 	cbus_bitbang_rd	= 19,
 	cbus_timestamp	= 20,
 	cbus_keep_awake	= 21,
+	_cbus_mode_end
 };
 enum misc_config {
 	bcd_enable		= 0x01,
@@ -535,11 +537,11 @@ static void ee_dump (struct eeprom_fields *ee)
 	/* CBUS */
 	printf("  CBUS\n");
 	printf("-------\n");
-	for (c = 0; c < CBUS_COUNT; ++c) {
-            if (ee->cbus[c] < _cbus_mode_end)
-                    printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
-            else
-                    printf("	CBUS%u = %d\n", c, ee->cbus[c]);
+        for (c = 0; c < CBUS_COUNT; ++c) {
+                if (ee->cbus[c] < _cbus_mode_end)
+                        printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
+                else
+                        printf("	CBUS%u = %d\n", c, ee->cbus[c]);
 	}
 }
 
@@ -1010,6 +1012,7 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
         show_help(stdout);
         exit(1);
       case arg_dump:
+        dump = 1;
         break;
       case arg_ignore_crc_error:
         ignore_crc_error = 1;
@@ -1237,16 +1240,19 @@ int main (int argc, char *argv[])
 
 	/* Build new eeprom image */
 	if (erase_eeprom == 0) {
-		new_crc = ee_encode(new, len, &ee);
+                if (!restore_path) new_crc = ee_encode(new, len, &ee);
+                else new_crc = calc_crc_ftx(new);
 	}  else {
 		memset(new, 0xff, 0x100);
 		new_crc = 0xFFFF;
 	}
 
-	/* If different from original, then write it back to the device */
-	if (0 == memcmp(old, new, len)) {
+        /* If different from original, then write it back to the device */
+        if(dump || save_path) {
+            printf("No write operations is performed\n");
+        } else if (0 == memcmp(old, new, len)) {
 		printf("No change from existing eeprom contents.\n");
-	} else {
+        } else {
 		if (verbose) { dumpmem("new eeprom", new, len); }
 
 		if (erase_eeprom == 0) {
@@ -1255,17 +1261,21 @@ int main (int argc, char *argv[])
 			printf("Erasing EEPROM\n");
 		}
 
-		ee_write(new, len);
+                printf("Continue? [y | n]:");
+                if (getc(stdin) == 'y') {
+                    ee_write(new, len);
 
-		/* Read it back again, and check for differences */
-		if (ee_read_and_verify(new, len) != new_crc ) {
-   			fprintf(stderr, "Readback test failed, results may be botched\n");
-			exit(EINVAL);
-	  	}
-		if (erase_eeprom == 1) { printf("Erase done\n"); }
+                    /* Read it back again, and check for differences */
+                    if (ee_read_and_verify(new, len) != new_crc ) {
+                            fprintf(stderr, "Readback test failed, results may be botched\n");
+                            exit(EINVAL);
+                    }
+                    if (erase_eeprom == 1) { printf("Erase done\n"); }
 
-		/* Reset the device to force it to load the new settings */
-		ftdi_usb_reset(&ftdi);
+                    /* Reset the device to force it to load the new settings */
+                    ftdi_usb_reset(&ftdi);
+                }
+
 	}
 
 	return 0;
