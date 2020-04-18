@@ -141,7 +141,9 @@ enum arg_type {
 	arg_invert,
 	arg_self_powered,
 	arg_ignore_crc_error,
-	arg_erase_eeprom
+	arg_erase_eeprom,
+	arg_dbus_config,
+	arg_cbus_config
 };
 
 struct args_required_t
@@ -182,7 +184,8 @@ const struct args_required_t req_info[] =
     {arg_invert, 1},
     {arg_self_powered, 1},
     {arg_ignore_crc_error, 0},
-    {arg_erase_eeprom, 0}
+    {arg_erase_eeprom, 0},
+    {arg_cbus_config,1},
 };
 
 
@@ -220,6 +223,8 @@ static const char* arg_type_strings[] = {
 	"--self-powered",
 	"--ignore-crc-error",
 	"--erase-eeprom",
+	"--dbus-config",
+	"--cbus-config",
 	NULL
 };
 static const char* rs232_strings[] = {
@@ -268,6 +273,17 @@ static const char* cbus_mode_strings[] = {
 	"Keep_Awake",
 	NULL
 };
+static const char *d_cbus_config_strings [] = {
+	"4ma",
+	"8ma",
+	"12ma",
+	"16ma",
+	"slow_slew",
+	"fast_slew",
+	"normal",
+	"schmitt",
+	NULL
+};
 
 static const char *arg_type_help[] = {
 	"   				    # (show this help text)",
@@ -300,6 +316,8 @@ static const char *arg_type_help[] = {
 	"		 [on|off]   # (specify if chip is bus-powered or self-powered)",
 	"   				    # Ignore CRC errors and continue ",
 	"   				    # Erase the EEPROM and exit",
+	"dbus_cfg",
+	"cbus_cfg",
 
 };
 
@@ -700,7 +718,7 @@ static unsigned short ee_encode (unsigned char *eeprom, int len,
 	eeprom[0x0C] |= (ee->dbus_drive_strength & dbus_drive_strength);
 	if (ee->dbus_slow_slew)			eeprom[0x0C] |= dbus_slow_slew;
 	if (ee->dbus_schmitt)			eeprom[0x0C] |= dbus_schmitt;
-	eeprom[0x0C] |= (ee->cbus_drive_strength & cbus_drive_strength) << 4;
+	eeprom[0x0C] |= ((ee->cbus_drive_strength)<<4) & cbus_drive_strength;
 	if (ee->cbus_slow_slew)			eeprom[0x0C] |= cbus_slow_slew;
 	if (ee->cbus_schmitt)			eeprom[0x0C] |= cbus_schmitt;
 
@@ -889,6 +907,10 @@ static void show_help (FILE *fp)
 				print_options(fp, cbus_mode_strings);
 			} else if (strcmp(val, "[invert]") == 0) {
 				print_options(fp, rs232_strings);
+			} else if (strcmp(val, "dbus_cfg") == 0) {
+				print_options(fp, d_cbus_config_strings);
+			} else if (strcmp(val, "cbus_cfg") == 0) {
+				print_options(fp, d_cbus_config_strings);
 			} else {
 				fprintf(fp, "  %s", val);
 			}
@@ -1030,6 +1052,24 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
       case arg_cbus:
         c = match_arg(argv[i++], cbus_strings);
         ee->cbus[c] = match_arg(argv[i++], cbus_mode_strings);
+        break;
+      case arg_cbus_config:
+        c = match_arg(argv[i++], d_cbus_config_strings);
+				if( c < 4)
+					ee->cbus_drive_strength = c;
+				else if( 4 == c) {
+					ee->cbus_slow_slew=1;
+				}	else if( 6 == c)
+					ee->cbus_schmitt=1;
+        break;
+    	case arg_dbus_config:
+        c = match_arg(argv[i++], d_cbus_config_strings);
+				if( c < 4)
+					ee->dbus_drive_strength = c;
+				else if( 4 == c){
+					ee->dbus_slow_slew=1;
+				}	else if( 6 == c)
+					ee->dbus_schmitt=1;
         break;
       case arg_invert:
         switch(match_arg(argv[i++], rs232_strings)) {
