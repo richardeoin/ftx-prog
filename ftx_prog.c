@@ -32,7 +32,7 @@
 #include <ftdi.h>
 #include <stdbool.h>
 
-#define MYVERSION	"0.2"
+#define MYVERSION	"0.3"
 
 #define CBUS_COUNT	7
 
