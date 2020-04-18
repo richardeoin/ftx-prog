@@ -198,6 +198,10 @@ GPL v2
 
 Bug reports and pull requests welcome!
 
+This project is passively maintained, so there may be no changes for a long
+time. PRs are more likely to get merged if they are well explained, well
+commented and match the style of the surrounding code.
+
 ## Credits
 
 Modified for the FT-X series by Richard Meadows 2012

@@ -1,0 +1,17 @@
+dist: bionic
+language: c
+
+compiler:
+  - gcc
+
+os:
+  - linux
+
+addons:
+  apt:
+    packages:
+      - libusb-dev
+      - libftdi-dev
+
+script:
+  - make
