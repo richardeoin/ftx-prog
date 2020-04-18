@@ -68,6 +68,7 @@ enum cbus_mode {
   cbus_bitbang_rd	= 19,
   cbus_timestamp	= 20,
   cbus_keep_awake	= 21,
+  _cbus_mode_end
 };
 enum misc_config {
   bcd_enable		= 0x01,
@@ -554,7 +555,12 @@ static void ee_dump (struct eeprom_fields *ee)
   printf("  CBUS\n");
   printf("-------\n");
   for (c = 0; c < CBUS_COUNT; ++c) {
-    printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
+    /* Check this is a valid cbus mode */
+      if (ee->cbus[c] < _cbus_mode_end) {
+        printf("	CBUS%u = %s\n", c, cbus_mode_strings[ee->cbus[c]]);
+      } else {
+        printf("	CBUS%u = %d\n", c, ee->cbus[c]);
+      }
   }
 };
 
@@ -1293,17 +1299,20 @@ int main (int argc, char *argv[])
       printf("Erasing EEPROM\n");
     }
 
-    ee_write(new, len);
+    printf("Continue? [y|n]:");
+    if (getc(stdin) == 'y') {
+      ee_write(new, len);
 
-    /* Read it back again, and check for differences */
-    if (ee_read_and_verify(new, len) != new_crc ) {
-      fprintf(stderr, "Readback test failed, results may be botched\n");
-      exit(EINVAL);
+      /* Read it back again, and check for differences */
+      if (ee_read_and_verify(new, len) != new_crc ) {
+        fprintf(stderr, "Readback test failed, results may be botched\n");
+        exit(EINVAL);
+      }
+      if (erase_eeprom == 1) { printf("Erase done\n"); }
+
+      /* Reset the device to force it to load the new settings */
+      ftdi_usb_reset(&ftdi);
     }
-    if (erase_eeprom == 1) { printf("Erase done\n"); }
-
-    /* Reset the device to force it to load the new settings */
-    ftdi_usb_reset(&ftdi);
   }
 
   return 0;
