@@ -562,7 +562,7 @@ static void ee_dump (struct eeprom_fields *ee)
         printf("	CBUS%u = %d\n", c, ee->cbus[c]);
       }
   }
-};
+}
 
 /* ------------ Cyclic Redundancy Check ------------ */
 
@@ -962,12 +962,12 @@ static int ee_write(unsigned char *eeprom, int len)
   return 0;
 }
 
-static unsigned short ee_read_and_verify (void *eeprom, int len)
+static unsigned short ee_read_and_verify (unsigned char *eeprom, int len)
 {
   int i;
 
   for (i = 0; i < len/2; i++) {
-    if (ftdi_read_eeprom_location(&ftdi, i, eeprom+(i*2))) {
+    if (ftdi_read_eeprom_location(&ftdi, i, (void*)(eeprom + (i*2)))) {
       fprintf(stderr, "ftdi_read_eeprom_location() failed: %s\n",
               ftdi_get_error_string(&ftdi));
       exit(EIO);

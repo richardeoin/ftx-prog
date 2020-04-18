@@ -1,4 +1,4 @@
-CFLAGS = -Wall -O2 -s -Werror
+CFLAGS = -Wall -O2 -s -Werror -pedantic
 LDFLAGS = -lusb -lftdi -s
 PROG = ftx_prog
 
