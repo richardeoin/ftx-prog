@@ -8,7 +8,7 @@ utility for [FTDI](http://www.ftdichip.com/)'s
 Install some prerequisites
 
 ```
-sudo apt-get install build-essential gcc make libftdi-dev
+sudo apt-get install build-essential gcc make libftdi1-dev
 ```
 
 then
