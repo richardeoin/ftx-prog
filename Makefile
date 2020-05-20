@@ -1,5 +1,5 @@
-CFLAGS = -Wall -O2 -s -Werror -pedantic
-LDFLAGS = -lusb -lftdi -s
+CFLAGS = -Wall -O2 -s -Werror -pedantic -I/usr/include/libftdi1/
+LDFLAGS = -lusb -lftdi1 -s
 PROG = ftx_prog
 
 all:	$(PROG)
