@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <ftdi.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define MYVERSION	"0.3"
 
@@ -42,6 +43,8 @@ static int erase_eeprom = 0;
 static int ignore_crc_error = 0;
 static bool use_8b_strings = false;
 static const char *save_path = NULL, *restore_path = NULL;
+static bool is_bus_dev_addr_selection = false;
+static int bus, addr;
 
 /* ------------ Bit Definitions for EEPROM Decoding ------------ */
 
@@ -144,7 +147,9 @@ enum arg_type {
   arg_ignore_crc_error,
   arg_erase_eeprom,
   arg_dbus_config,
-  arg_cbus_config
+  arg_cbus_config,
+  arg_select_by_bus_dev_addr
+  
 };
 
 struct args_required_t
@@ -187,6 +192,7 @@ const struct args_required_t req_info[] =
   {arg_ignore_crc_error, 0},
   {arg_erase_eeprom, 0},
   {arg_cbus_config,1},
+  {arg_select_by_bus_dev_addr, 2},
 };
 
 
@@ -226,6 +232,7 @@ static const char* arg_type_strings[] = {
   "--erase-eeprom",
   "--dbus-config",
   "--cbus-config",
+  "--bus-dev-addr",
   NULL
 };
 static const char* rs232_strings[] = {
@@ -319,6 +326,7 @@ static const char *arg_type_help[] = {
   "   				    # Erase the EEPROM and exit",
   "dbus_cfg",
   "cbus_cfg",
+  "[bus_addr] [device_addr]    # Select device by given usb bus:device address (see lsusb)",
 
 };
 
@@ -1157,6 +1165,11 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
     case arg_new_pid:
       ee->usb_pid = unsigned_val(argv[i++], 0xffff);
       break;
+    case arg_select_by_bus_dev_addr:
+      is_bus_dev_addr_selection = true;
+      bus = unsigned_val(argv[i++], 0xffff);
+      addr = unsigned_val(argv[i++], 0xffff);
+      break;
     }
   }
 
@@ -1248,12 +1261,23 @@ int main (int argc, char *argv[])
     return -1;
   }
 
-  if (ftdi_usb_open_desc(&ftdi, ee.old_vid, ee.old_pid, NULL, ee.old_serno)) {
-    fprintf(stderr, "ftdi_usb_open() failed for %04x:%04x:%s %s\n",
-            ee.old_vid, ee.old_pid,
-            ee.old_serno ? ee.old_serno : "", ftdi_get_error_string(&ftdi));
-    exit(ENODEV);
-  }
+    if (is_bus_dev_addr_selection)
+    {
+        int ret = ftdi_usb_open_bus_addr(&ftdi, bus, addr);
+        if (ret) {
+            fprintf(stderr,"ftdi_usb_open() failed for usb device %03d:%03d with return code %d and message: %s\n", bus, addr, ret, ftdi_get_error_string(&ftdi));
+            exit(ENODEV);
+        }
+    }
+    else
+    {
+        if (ftdi_usb_open_desc(&ftdi, ee.old_vid, ee.old_pid, NULL, ee.old_serno)) {
+            fprintf(stderr, "ftdi_usb_open() failed for %04x:%04x:%s %s\n",
+                    ee.old_vid, ee.old_pid,
+                    ee.old_serno ? ee.old_serno : "", ftdi_get_error_string(&ftdi));
+            exit(ENODEV);
+        }
+    }
   atexit(&do_close);
 
   /* First, read the original eeprom from the device */
