@@ -1,5 +1,5 @@
 CFLAGS = -Wall -O2 -s -Werror -pedantic
-LDFLAGS = -lusb -lftdi -s
+LDFLAGS = -lusb -lftdi1 -s
 PROG = ftx_prog
 
 all:	$(PROG)

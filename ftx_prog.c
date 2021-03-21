@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <ftdi.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define MYVERSION	"0.3"
 
