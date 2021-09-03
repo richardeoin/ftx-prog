@@ -1266,14 +1266,14 @@ int main (int argc, char *argv[])
 
   /* Restore contents from a file, if requested (--restore) */
   if (restore_path) {
+     /* TODO: It'd be nice to check we can restore the EEPROM.. */
     restore_eeprom_from_file(restore_path, new, len, sizeof(new));
+    ee_decode(new, len, &ee);
+    memcpy(ee.factory_config, &old[0x80], 32);
     if (verbose) dumpmem(restore_path, new, len);
+  } else {
+    ee_decode(old, len, &ee);
   }
-
-  /* TODO: It'd be nice to check we can restore the EEPROM.. */
-
-  /* Decode eeprom contents into ee struct */
-  ee_decode(old, len, &ee);
 
   /* process args, and dump new settings */
   process_args(argc, argv, &ee);	/* Handle value-change args */
