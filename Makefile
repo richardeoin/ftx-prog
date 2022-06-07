@@ -7,7 +7,7 @@ LDFLAGS_FTDI = -lftdi
 endif
 
 override CFLAGS += -Wall -O2 -s -pedantic $(CFLAGS_FTDI)
-override LDFLAGS += -lusb $(LDFLAGS_FTDI) -s
+override LDFLAGS += -lusb-1.0 $(LDFLAGS_FTDI) -s
 
 PROG = ftx_prog
 
