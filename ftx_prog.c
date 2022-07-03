@@ -33,7 +33,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-#define MYVERSION	"0.3"
+#define MYVERSION	"0.4"
 
 #define CBUS_COUNT	7
 
