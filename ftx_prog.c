@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <ftdi.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define MYVERSION	"0.3"
 
@@ -928,6 +929,18 @@ static void show_help (FILE *fp)
 
 /* ------------ EEPROM Reading and Writing ------------ */
 
+#ifdef USE_LIBFTDI1
+static int ee_write(unsigned char *eeprom, int len)
+{
+  if (ftdi_set_eeprom_buf(&ftdi, eeprom, len) != 0)
+    exit(EIO);
+
+  if (ftdi_write_eeprom(&ftdi) != 0)
+    exit(EIO);
+
+  return 0;
+}
+#else
 static int ee_prepare_write(void)
 {
   unsigned short status;
@@ -961,9 +974,20 @@ static int ee_write(unsigned char *eeprom, int len)
 
   return 0;
 }
+#endif
 
 static unsigned short ee_read_and_verify (unsigned char *eeprom, int len)
 {
+#ifdef USE_LIBFTDI1
+  if (ftdi_read_eeprom(&ftdi) != 0)
+    exit(EIO);
+
+  if (ftdi_get_eeprom_buf(&ftdi, eeprom, len) != 0)
+    exit(EIO);
+
+  if (ftdi_eeprom_build(&ftdi) < 0)
+    exit(EIO);
+#else
   int i;
 
   for (i = 0; i < len/2; i++) {
@@ -973,6 +997,7 @@ static unsigned short ee_read_and_verify (unsigned char *eeprom, int len)
       exit(EIO);
     }
   }
+#endif
 
   return verify_crc(eeprom, len);
 }
