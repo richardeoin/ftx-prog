@@ -1,0 +1,22 @@
+name: python-app
+
+on:
+  push:
+     branches: [ master ]
+  pull_request:
+     branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout repo
+      uses: actions/checkout@v3
+
+    - name: Install libusb and libfdti
+      run: |
+        sudo apt-get update
+        sudo apt-get install libusb-1.0-0-dev libftdi-dev
+
+    - name: build application
+      run: make
