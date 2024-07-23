@@ -44,6 +44,9 @@ static int ignore_crc_error = 0;
 static bool use_8b_strings = false;
 static const char *save_path = NULL, *restore_path = NULL;
 
+static int bus = 0;
+static int addr = 0;
+
 /* ------------ Bit Definitions for EEPROM Decoding ------------ */
 
 enum cbus_mode {
@@ -145,7 +148,9 @@ enum arg_type {
   arg_ignore_crc_error,
   arg_erase_eeprom,
   arg_dbus_config,
-  arg_cbus_config
+  arg_cbus_config,
+  arg_bus,
+  arg_addr,
 };
 
 struct args_required_t
@@ -188,6 +193,8 @@ const struct args_required_t req_info[] =
   {arg_ignore_crc_error, 0},
   {arg_erase_eeprom, 0},
   {arg_cbus_config,1},
+  {arg_bus, 1},
+  {arg_addr, 1},
 };
 
 
@@ -227,6 +234,8 @@ static const char* arg_type_strings[] = {
   "--erase-eeprom",
   "--dbus-config",
   "--cbus-config",
+  "--bus",
+  "--addr",
   NULL
 };
 static const char* rs232_strings[] = {
@@ -320,7 +329,8 @@ static const char *arg_type_help[] = {
   "   				    # Erase the EEPROM and exit",
   "dbus_cfg",
   "cbus_cfg",
-
+  "  <bus>   # Specify USB bus of the device to use",
+  "  <address>   # Specify USB address of the device to use",
 };
 
 static const char *bool_strings[] = {
@@ -1182,6 +1192,12 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
     case arg_new_pid:
       ee->usb_pid = unsigned_val(argv[i++], 0xffff);
       break;
+    case arg_bus:
+      bus = unsigned_val(argv[i++], 255);
+      break;
+    case arg_addr:
+      addr = unsigned_val(argv[i++], 255);
+      break;
     }
   }
 
@@ -1273,11 +1289,21 @@ int main (int argc, char *argv[])
     return -1;
   }
 
-  if (ftdi_usb_open_desc(&ftdi, ee.old_vid, ee.old_pid, NULL, ee.old_serno)) {
-    fprintf(stderr, "ftdi_usb_open() failed for %04x:%04x:%s %s\n",
-            ee.old_vid, ee.old_pid,
-            ee.old_serno ? ee.old_serno : "", ftdi_get_error_string(&ftdi));
-    exit(ENODEV);
+  if(bus & addr) {
+    char device_string[10];
+    snprintf(device_string,10,"d:%03d/%03d",bus, addr);
+    if (ftdi_usb_open_string(&ftdi, device_string)) {
+      fprintf(stderr, "ftdi_usb_open_bus_addr() failed for %03d:%03d %s\n",
+              bus, addr, ftdi_get_error_string(&ftdi));
+      exit(ENODEV);
+    }
+  } else {
+    if (ftdi_usb_open_desc(&ftdi, ee.old_vid, ee.old_pid, NULL, ee.old_serno)) {
+      fprintf(stderr, "ftdi_usb_open() failed for %04x:%04x:%s %s\n",
+              ee.old_vid, ee.old_pid,
+              ee.old_serno ? ee.old_serno : "", ftdi_get_error_string(&ftdi));
+      exit(ENODEV);
+    }
   }
   atexit(&do_close);
 
